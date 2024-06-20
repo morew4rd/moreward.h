@@ -20,6 +20,7 @@ set(src_impl
 set(src_cases
     ./cases/t_smoke.c
     ./cases/t_basic.c
+    ./cases/t_list.c
 )
 
 # unit tests use implementation files, not the resulting 'moreward.h'

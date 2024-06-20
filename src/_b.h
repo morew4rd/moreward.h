@@ -10,13 +10,12 @@
 /* alloc and buffer errors */
 
 enum {
-    ERR_ALLOC_NEG_SIZE          = 10001,
-
-    ERR_BUFFER_PTR_NIL          = 11001,
-
-    ERR_LIST_PTR_NIL            = 12001,
-    ERR_LIST_IS_INITIALIZED     = 12002,    /* if l_init is called on an initialized list */
-    ERR_LIST_IS_UNINITIALIZED   = 12003,    /* if l_setcap is called on an uninitialized list */
+    ERR_ALLOC_NEG_SIZE              = 10001,
+    ERR_BUFFER_PTR_NIL              = 11001,
+    ERR_LIST_PTR_NIL                = 12001,
+    ERR_LIST_ALREADY_INITIALIZED    = 12002,    /* if l_init is called on an initialized list */
+    ERR_LIST_ITEMSIZE_NOT_SET       = 12003,    /* if l_setcap is called on an uninitialized list */
+    ERR_LIST_OUT_OF_BOUNDS          = 12004,    /* if index > len - 1.  l_get  */
 };
 
 
@@ -24,6 +23,7 @@ enum {
 #define CHECK_ALLOC_SIZE(size, errptr, ret)     if (size < 0) { if (errptr) { *errptr = ERR_ALLOC_NEG_SIZE; } return ret; }
 #define CHECK_BUFFER_PTR(b, errptr, ret)        if (!b) { if (errptr) { *errptr = ERR_BUFFER_PTR_NIL; } return ret; }
 #define CHECK_LIST_PTR(l, errptr, ret)          if (!l) { if (errptr) { *errptr = ERR_LIST_PTR_NIL; } return ret; }
+#define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if (l->itemsize == 0) { if (errptr) { *errptr = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
 
 
 typedef struct Alloc {
@@ -54,5 +54,8 @@ ierr b_setsize(Buffer *b, isize size, Alloc *a);
 
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
 ierr l_setcap(List *l, isize cap, Alloc *a);
+ierr l_push(List *l, void *item, Alloc *a);
+void *l_pop(List *l, ierr *errptr);
+void *l_get(List *l, isize index, ierr *errptr);
 
 #endif  /* _B_H_INCLUDED_ */

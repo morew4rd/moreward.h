@@ -43,7 +43,22 @@ UTEST(basic, simple_list) {
     List l = {0};
     EXPECT_EQ(l.buf.data, nil);
     EXPECT_EQ(l.buf.data, nil);
+
+    /* init list */
     e = l_init(&l, 10, 100, nil);
     EXPECT_EQ(e, 0);
     EXPECT_NE(l.buf.data, nil);
+    EXPECT_EQ(l.buf.size,  10 * 100);
+
+    /* set_cap */
+    e = l_setcap(&l, 200, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_NE(l.buf.data, nil);
+    EXPECT_EQ(l.buf.size,  10 * 200);
+
+    /* set_cap to 0 (cleanup) */
+    e = l_setcap(&l, 0, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.buf.data, nil);
+    EXPECT_EQ(l.buf.size,  0);
 }
