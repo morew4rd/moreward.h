@@ -2,23 +2,35 @@
 #define _A_H_INCLUDED_
 /* line will be cut */
 
-/* aliases */
 
 #include <stddef.h>
 
+/* basic macros  */
 
+#define M_DISABLE_ASSERTS
+
+#ifndef M_DISABLE_ASSERTS
+#include <assert.h>
+#define m_assert(x)     assert(x)
+#else
+#define m_assert(x)
+#endif
 
 #define countof(a)      (isize)(sizeof(a) / sizeof(*(a)))
 #define max(a, b)       ((a)>(b) ? (a) : (b))
 #define min(a, b)       ((a)<(b) ? (a) : (b))
 
-#define nil NULL
 
+/*  c89 bool type  */
 
 typedef int bool;
 #define true (1)
 #define false (0)
 
+
+/*  shortcuts  */
+
+#define nil NULL
 
 typedef float           f32;
 typedef double          f64;

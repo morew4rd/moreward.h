@@ -1,7 +1,7 @@
 #include "utest.h"
 
 #ifdef TEST_UNIT
-#include "m.h"
+#include "mg.h"
 #endif
 
 UTEST_MAIN();

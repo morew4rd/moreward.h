@@ -1,4 +1,4 @@
-#include "m.h"
+#include "mg.h"
 
 #include <stdlib.h>
 
@@ -29,6 +29,10 @@ static void _def_free(void *ptr, void *udata) {
 
 static Alloc _def_alloc = {nil, _def_malloc, _def_realloc, _def_free};
 
+
+Alloc *default_alloc = &_def_alloc;
+
+
 Alloc *get_default_alloc(void) {
-    return &_def_alloc;
+    return default_alloc;
 }

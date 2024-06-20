@@ -21,23 +21,35 @@ Guide is TBD
 */
 
 
-/* aliases */
 
 #include <stddef.h>
 
+/* basic macros  */
 
+#define M_DISABLE_ASSERTS
+
+#ifndef M_DISABLE_ASSERTS
+#include <assert.h>
+#define m_assert(x)     assert(x)
+#else
+#define m_assert(x)
+#endif
 
 #define countof(a)      (isize)(sizeof(a) / sizeof(*(a)))
 #define max(a, b)       ((a)>(b) ? (a) : (b))
 #define min(a, b)       ((a)<(b) ? (a) : (b))
 
-#define nil NULL
 
+/*  c89 bool type  */
 
 typedef int bool;
 #define true (1)
 #define false (0)
 
+
+/*  shortcuts  */
+
+#define nil NULL
 
 typedef float           f32;
 typedef double          f64;
@@ -67,10 +79,23 @@ typedef int             ierr;
 #define M_LIST_DEFAULT_INITIAL_CAPACITY     8
 #endif
 
+/* alloc and buffer errors */
 
-enum __AllocError {
-    ERR_ALLOC_NIL   = 11000,
+enum {
+    ERR_ALLOC_NEG_SIZE          = 10001,
+
+    ERR_BUFFER_PTR_NIL          = 11001,
+
+    ERR_LIST_PTR_NIL            = 12001,
 };
+
+
+#define CHECK_ALLOCATOR(a)                      if (!a) { a = default_alloc; }
+#define CHECK_ALLOC_SIZE(size, errptr, ret)     if (size < 0) { if (errptr) { *errptr = ERR_ALLOC_NEG_SIZE; } return ret; }
+#define CHECK_BUFFER_PTR(b, errptr, ret)        if (!b) { if (errptr) { *errptr = ERR_BUFFER_PTR_NIL; } return ret; }
+
+
+#define CHECK_LIST_PTR(l, errptr, ret)           if (!l) { if (errptr) { *errptr = ERR_LIST_PTR_NIL; } return ret; }
 
 
 typedef struct Alloc {
@@ -81,11 +106,31 @@ typedef struct Alloc {
 } Alloc;
 
 
+typedef struct Buffer {
+    isize size;  /* in bytes */
+    void *data;
+} Buffer;
+
+
+typedef struct List {
+    isize itemsize;
+    isize len;  /* number of items */
+    isize cap;  /* capacity (value = buffer.size / itemsize) */
+    Buffer *buf;
+} List;
+
+
+
+
+extern Alloc *default_alloc;
+
 Alloc *get_default_alloc(void);
 
+ierr b_setsize(Buffer *b, isize size, Alloc *a);
 
-/* c.h */
-/* m.h */
+ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
+ierr l_setcap(List *l, isize cap, Alloc *a);
+
 
 
 /* IMPLEMENTATION */
@@ -123,10 +168,51 @@ static void _def_free(void *ptr, void *udata) {
 
 static Alloc _def_alloc = {nil, _def_malloc, _def_realloc, _def_free};
 
+
+Alloc *default_alloc = &_def_alloc;
+
+
 Alloc *get_default_alloc(void) {
-    return &_def_alloc;
+    return default_alloc;
 }
 
+
+ierr b_setsize(Buffer *b, isize size, Alloc *a) {
+    ierr e = 0;
+    CHECK_ALLOCATOR(a);
+    CHECK_BUFFER_PTR(b, &e, e);
+    CHECK_ALLOC_SIZE(size, &e, e);
+
+    if (size == 0) {
+        if (b->size == 0) {
+            /* nothing. buffer already empty */
+            m_assert(!b->data);   /* data should be nil */
+        } else {
+            /* free buffer */
+            m_assert(b->data);   /* data should not be nil */
+            a->free(b->data, a->udata);
+            b->data = nil;
+            b->size = 0;
+        }
+    } else if (size == b->size) {
+        /* do nothing */
+        m_assert(b->data);   /* data should not be nil */
+    } else if (b->size == 0) {
+        /* malloc */
+        m_assert(!b->data);   /* data should be nil */
+        b->data = a->malloc(size, a->udata);
+        m_assert(b->data);   /* data should not be nil */
+        b->size = size;
+    } else {
+        /* realloc */
+        m_assert(b->data);   /* data should not be nil */
+        b->data = a->realloc(b->data, size, a->udata);
+        m_assert(b->data);   /* data should not be nil */
+        b->size = size;
+    }
+
+    return e;
+}
 #endif /* MOREWARD_H_IMPL */
 
 /*
