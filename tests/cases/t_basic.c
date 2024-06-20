@@ -36,3 +36,14 @@ UTEST(basic, simple_buffer) {
     EXPECT_EQ(b.size, 0);
     EXPECT_EQ(b.data, nil);
 }
+
+
+UTEST(basic, simple_list) {
+    ierr e = 0;
+    List l = {0};
+    EXPECT_EQ(l.buf.data, nil);
+    EXPECT_EQ(l.buf.data, nil);
+    e = l_init(&l, 10, 100, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_NE(l.buf.data, nil);
+}

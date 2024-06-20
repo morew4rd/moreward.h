@@ -3,7 +3,7 @@
 
 ierr b_setsize(Buffer *b, isize size, Alloc *a) {
     ierr e = 0;
-    CHECK_ALLOCATOR(a);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_BUFFER_PTR(b, &e, e);
     CHECK_ALLOC_SIZE(size, &e, e);
 

@@ -2,12 +2,9 @@
 #define _A_H_INCLUDED_
 /* line will be cut */
 
-
 #include <stddef.h>
 
 /* basic macros  */
-
-#define M_DISABLE_ASSERTS
 
 #ifndef M_DISABLE_ASSERTS
 #include <assert.h>
@@ -21,6 +18,8 @@
 #define min(a, b)       ((a)<(b) ? (a) : (b))
 
 
+#define nil NULL
+
 /*  c89 bool type  */
 
 typedef int bool;
@@ -30,11 +29,8 @@ typedef int bool;
 
 /*  shortcuts  */
 
-#define nil NULL
-
 typedef float           f32;
 typedef double          f64;
-
 typedef signed char     i8;
 typedef unsigned char   u8;
 typedef signed short    i16;
@@ -44,12 +40,10 @@ typedef unsigned int    u32;
 typedef signed long     i64;
 typedef unsigned long   u64;
 typedef u8              byte;
-
 typedef size_t          usize;
 typedef ptrdiff_t       isize;
 typedef u32             uint;
 typedef u64             uptr;
-
 typedef int             ierr;
 
 
