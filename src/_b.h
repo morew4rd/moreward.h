@@ -7,6 +7,11 @@
 #define M_LIST_DEFAULT_INITIAL_CAPACITY     8
 #endif
 
+#ifndef M_LIST_MIN_EMPTY_SLOTS
+#define M_LIST_MIN_EMPTY_SLOTS              4
+#endif
+
+
 /* alloc and buffer errors */
 
 enum {
@@ -24,6 +29,7 @@ enum {
 #define CHECK_BUFFER_PTR(b, errptr, ret)        if (!b) { if (errptr) { *errptr = ERR_BUFFER_PTR_NIL; } return ret; }
 #define CHECK_LIST_PTR(l, errptr, ret)          if (!l) { if (errptr) { *errptr = ERR_LIST_PTR_NIL; } return ret; }
 #define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if (l->itemsize == 0) { if (errptr) { *errptr = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
+#define CHECK_LIST_BOUNDS(l, idx, errptr, ret)  if (idx < 0 || idx > l->len - 1) { *errptr = ERR_LIST_OUT_OF_BOUNDS; return ret; }
 
 
 typedef struct Alloc {
@@ -55,7 +61,10 @@ ierr b_setsize(Buffer *b, isize size, Alloc *a);
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
 ierr l_setcap(List *l, isize cap, Alloc *a);
 ierr l_push(List *l, void *item, Alloc *a);
+ierr l_put(List *l, void *item, isize index);
 void *l_pop(List *l, ierr *errptr);
 void *l_get(List *l, isize index, ierr *errptr);
+ierr l_rm_swap(List *l, isize index); /* does not keep the oder */
+ierr l_rm_move(List *l, isize index);  /* moves items */
 
 #endif  /* _B_H_INCLUDED_ */

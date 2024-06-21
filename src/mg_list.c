@@ -26,6 +26,23 @@ static ierr _l_setcap_nochecks(List *l, isize cap, Alloc *a) {
     return e;
 }
 
+static void _l_put_nochecks(List *l, void *item, isize index) {
+    byte *storage = l->buf.data;
+    storage += index * l->itemsize;
+    memcpy(storage, item, l->itemsize);
+}
+
+static ierr _l_check_for_growth_and_grow(List *l, Alloc *a) {
+    ierr e = 0;
+    if (l->len >= l->cap - M_LIST_MIN_EMPTY_SLOTS ) {
+        e = _l_setcap_nochecks(l, l->cap * 2 + M_LIST_MIN_EMPTY_SLOTS,  a);
+        if (e != 0) {
+            return e;
+        }
+    }
+    m_assert(l->len < l->cap);
+    return e;
+}
 
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a) {
     ierr e = 0;
@@ -61,22 +78,26 @@ ierr l_setcap(List *l, isize cap, Alloc *a) {
 
 ierr l_push(List *l, void *item, Alloc *a) {
     ierr e = 0;
-    byte *storage = nil;
     CHECK_GET_ALLOCATOR(a);
     CHECK_LIST_PTR(l, &e, e);
     CHECK_LIST_ITEMSIZE(l, &e, e);
-
-    if (l->len == l->cap) {
-        e = _l_setcap_nochecks(l, l->cap * 2,  a);
-        if (e != 0) {
-            return e;
-        }
+    e = _l_check_for_growth_and_grow(l, a);
+    if (e != 0) {
+        return e;
     }
-    m_assert(l->len < l->cap);
-    storage = l->buf.data;
-    storage += l->len * l->itemsize;
-    memcpy(storage, item, l->itemsize);
+    _l_put_nochecks(l, item, l->len);
+
     l->len += 1;
+    return e;
+}
+
+ierr l_put(List *l, void *item, isize index) {
+    ierr e = 0;
+    CHECK_LIST_PTR(l, &e, e);
+    CHECK_LIST_ITEMSIZE(l, &e, e);
+    CHECK_LIST_BOUNDS(l, index, &e, e);
+
+    _l_put_nochecks(l, item, index);
     return e;
 }
 
@@ -92,16 +113,33 @@ void *l_pop(List *l, ierr *errptr) {
 void *l_get(List *l, isize index, ierr *errptr) {
     byte *storage = nil;
     CHECK_LIST_PTR(l, errptr, nil);
-    if (index < 0 || index > l->len - 1) {
-        *errptr = ERR_LIST_OUT_OF_BOUNDS;
-        return nil;
-    }
+    CHECK_LIST_BOUNDS(l, index, errptr, nil);
     storage = l->buf.data;
     storage += l->itemsize * index;
     return storage;
 }
 
+/* faster, but does not keep the order */
+ierr l_rm_swap(List *l, isize index) {
+    ierr e = 0;
+    void *item = nil;
+    void *last = nil;
+    CHECK_LIST_BOUNDS(l, index, &e, e);
+    if (l->len > 1) {
+        /* if there's only 1 item, then no need to do a swap. otherwise overwrite the item with the last item */
+        item = l->buf.data + index * l->itemsize;
+        last = l->buf.data + (l->len - 1) * l->itemsize;
+        memcpy(item, last, l->itemsize);
+    }
+    l->len -= 1;
+    return e;
+}
 
+
+// /* moves items, slow but keeps the order */
+// ierr l_rm_move(List *l, isize index) {
+
+// }
 
 
 
