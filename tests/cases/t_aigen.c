@@ -71,6 +71,7 @@ UTEST(aigen, list_init_invalid_item_size) {
     ierr e = 0;
     List l = {0};
     e = l_init(&l, -10, 100, nil);
+    EXPECT_EQ(e, 0);
     EXPECT_EQ(l.itemsize, M_LIST_DEFAULT_INITIAL_CAPACITY);
     EXPECT_NE(l.buf.data, nil);
     EXPECT_EQ(l.buf.size, 100*M_LIST_DEFAULT_INITIAL_CAPACITY);

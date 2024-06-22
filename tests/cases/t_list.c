@@ -555,6 +555,61 @@ UTEST(list, list_push_remove_range__all) {
 
 
 
+UTEST(list, list_insert_tests) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+    int val;
+    int *rec = nil;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+    val = 111;
+    e = l_insert(&l, 0, &val, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 6);
+
+
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 111);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 1);
+
+    val = 222;
+    e = l_insert(&l, 6, &val, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 7);
+
+    rec = l_get(&l, 6, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 222);
+
+    val = 333;
+    e = l_insert(&l, 4, &val, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 8);
+
+    rec = l_get(&l, 4, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 333);
+}
+
 
 
 

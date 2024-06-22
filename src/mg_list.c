@@ -190,9 +190,40 @@ ierr l_rm_move_n(List *l, isize index, isize n) {
 }
 
 
-// ierr l_insert(List *l, isize index, void *item, Alloc *a) {
 
-// }
+
+// AI written verify
+ierr l_insert(List *l, isize index, void *item, Alloc *a) {
+     ierr e = 0;
+     CHECK_GET_ALLOCATOR(a);
+     CHECK_LIST_PTR(l, &e, e);
+     CHECK_LIST_ITEM_PTR(item, &e, e);
+
+    if (index == l->len) {
+        return l_push(l, item, a);
+    }
+
+     CHECK_LIST_BOUNDS(l, index, &e, e);
+
+     e = _l_check_for_growth_and_grow(l, a);
+     if (e != 0) {
+         return e;
+     }
+
+     if (index < l->len) {
+         /* Shift all items after index to the right by one */
+         memmove(
+             l->buf.data + (index + 1) * l->itemsize,
+             l->buf.data + index * l->itemsize,
+             (l->len - index) * l->itemsize
+         );
+     }
+
+     _l_put_nochecks(l, item, index);
+     l->len += 1;
+
+     return e;
+}
 
 
 // ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
