@@ -34,7 +34,7 @@ static void _l_put_nochecks(List *l, void *item, isize index) {
 
 static ierr _l_check_for_growth_and_grow(List *l, Alloc *a) {
     ierr e = 0;
-    if (l->len >= l->cap - M_LIST_MIN_EMPTY_SLOTS ) {
+    if (l->len  >= l->cap - M_LIST_MIN_EMPTY_SLOTS ) {
         e = _l_setcap_nochecks(l, l->cap * 2 + M_LIST_MIN_EMPTY_SLOTS,  a);
         if (e != 0) {
             return e;
@@ -114,12 +114,20 @@ void *l_get(List *l, isize index, ierr *errptr) {
     byte *storage = nil;
     CHECK_LIST_PTR(l, errptr, nil);
     CHECK_LIST_BOUNDS(l, index, errptr, nil);
+    *errptr = 0;
     storage = l->buf.data;
     storage += l->itemsize * index;
     return storage;
 }
 
-/* faster, but does not keep the order */
+ierr l_clear(List *l) {
+    ierr e = 0;
+    CHECK_LIST_PTR(l, &e, e);
+    l->len = 0;
+    return e;
+}
+
+/* remove item. faster, but does not keep the order */
 ierr l_rm_swap(List *l, isize index) {
     ierr e = 0;
     void *item = nil;
@@ -135,9 +143,56 @@ ierr l_rm_swap(List *l, isize index) {
     return e;
 }
 
+ierr l_rm_move(List *l, isize index) {
+    ierr e = 0;
+    CHECK_LIST_PTR(l, &e, e);
+    CHECK_LIST_BOUNDS(l, index, &e, e);
 
-// /* moves items, slow but keeps the order */
-// ierr l_rm_move(List *l, isize index) {
+    if (index < l->len - 1) {
+        /* Shift all items after index to the left by one */
+        memmove(
+            l->buf.data + index * l->itemsize,
+            l->buf.data + (index + 1) * l->itemsize,
+            (l->len - index - 1) * l->itemsize
+        );
+    }
+
+    l->len -= 1;
+    return e;
+}
+
+
+ierr l_rm_move_n(List *l, isize index, isize n) {
+    ierr e = 0;
+    CHECK_LIST_PTR(l, &e, e);
+    CHECK_LIST_BOUNDS(l, index, &e, e);
+    if (n <= 0) { return ERR_LIST_OUT_OF_BOUNDS; }
+    CHECK_LIST_BOUNDS(l, index + n - 1, &e, e);
+
+
+    if (index + n >= l->len) {
+        /* Remove from the end */
+        l->len -= n;
+    } else {
+        /* Shift all items after index by n */
+        memmove(
+            l->buf.data + index * l->itemsize,
+            l->buf.data + (index + n) * l->itemsize,
+            (l->len - index - n) * l->itemsize
+        );
+        l->len -= n;
+    }
+
+    return e;
+}
+
+
+// ierr l_insert(List *l, isize index, void *item, Alloc *a) {
+
+// }
+
+
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
 
 // }
 
@@ -158,6 +213,317 @@ ierr l_rm_swap(List *l, isize index) {
 
 
 
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+//     ierr e = 0;
+//     CHECK_GET_ALLOCATOR(a);
+//     CHECK_LIST_PTR(l, &e, e);
+//     CHECK_LIST_ITEMSIZE(l, &e, e);
+//     CHECK_LIST_BOUNDS(l, index, &e, e);
+
+//     if (l->len == 0) {
+//         e = _l_setcap_nochecks(l, n, a);
+//         if (e != 0) {
+//             return e;
+//         }
+//         for (isize i = 0; i < n; ++i) {
+//             _l_put_nochecks(l, nil, index + i);
+//         }
+//         l->len = n;
+//         return e;
+//     } else {
+//         e = _l_check_for_growth_and_grow(l, a);
+//         if (e != 0) {
+//             return e;
+//         }
+//         /* Move items to the right to make space for the new items */
+//         byte *dst = l->buf.data + (index + n) * l->itemsize;
+//         byte *src = l->buf.data + index * l->itemsize;
+//         isize bytes_to_move = (l->len - index) * l->itemsize;
+//         memmove(dst, src, bytes_to_move);
+//         /* Fill the new empty slots with the new items */
+//         for (isize i = 0; i < n; ++i) {
+//             _l_put_nochecks(l, nil, index + i);
+//         }
+//         l->len += n;
+//         return e;
+//     }
+// }
+
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+//     ierr e = 0;
+//     CHECK_LIST_PTR(l, &e, e);
+//     CHECK_LIST_ITEMSIZE(l, &e, e);
+//     // CHECK_LIST_BOUNDS(l, index, &e, e);
+
+//     if (n <= 0) return e;
+
+//     if (l->len + n > l->cap) {
+//         /* Make room by resizing the buffer */
+//         e = _l_setcap_nochecks(l, max(l->cap * 2, l->cap + n), a);
+//         if (e != 0) {
+//             return e;
+//         }
+//     }
+
+//     /* Shift items to the right to make space for the new slots */
+//     memmove(
+//         l->buf.data + (index + n) * l->itemsize,
+//         l->buf.data + index * l->itemsize,
+//         (l->len - index) * l->itemsize
+//     );
+
+//     /* Update the buffer size and length */
+//     l->buf.size += n * l->itemsize;
+//     l->len += n;
+
+//     return e;
+// }
+
+
+
+
+
+
+
+// ierr l_rm_move(List *l, isize index) {
+//     ierr e = 0;
+//     void *item = nil;
+//     CHECK_LIST_BOUNDS(l, index, &e, e);
+//     if (e != 0) {
+//         return e;
+//     }
+//     item = l_get(l, index, &e);
+//     if (e != 0) {
+//         return e;
+//     }
+//     if (index < l->len - 1) {
+//         memmove(item, l->buf.data + (index + 1) * l->itemsize, (l->len - index - 1) * l->itemsize);
+//     }
+//     l->len -= 1;
+//     return e;
+// }
+
+// ierr l_rm_move_n(List *l, isize index, isize n) {
+//     ierr e = 0;
+//     CHECK_LIST_BOUNDS(l, index, &e, e);
+//     CHECK_LIST_BOUNDS(l, index + n - 1, &e, e);
+//     if (e != 0) {
+//         return e;
+//     }
+//     if (index < l->len - n) {
+//         memmove(l->buf.data + index * l->itemsize, l->buf.data + (index + n) * l->itemsize, (l->len - index - n) * l->itemsize);
+//     }
+//     l->len -= n;
+//     return e;
+// }
+
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+//     ierr e = 0;
+//     CHECK_GET_ALLOCATOR(a);
+//     CHECK_LIST_PTR(l, &e, e);
+//     CHECK_LIST_BOUNDS(l, index, &e, e*100);
+//     e = _l_check_for_growth_and_grow(l, a);
+//     if (e != 0) {
+//         return e;
+//     }
+//     if (index < l->len) {
+//         memmove(l->buf.data + (index + n) * l->itemsize, l->buf.data + index * l->itemsize, (l->len - index) * l->itemsize);
+//     }
+//     l->len += n;
+//     return e;
+// }
+
+// ierr l_clear(List *l) {
+//     ierr e = 0;
+//     CHECK_LIST_PTR(l, &e, e);
+//     CHECK_LIST_ITEMSIZE(l, &e, e);
+//     l->len = 0;
+//     b_setsize(&l->buf, 0, default_alloc);
+//     return e;
+// }
+
+
+
+// ierr l_rm_move(List *l, isize index) {
+//     ierr e = 0;
+//     void *item = nil;
+//     CHECK_LIST_BOUNDS(l, index, &e, e);
+//     if (l->len > 1) {
+//         item = l->buf.data + index * l->itemsize;
+//         memcpy(item, l->buf.data + (index + 1) * l->itemsize, l->itemsize);
+//     }
+//     l->len -= 1;
+//     return e;
+// }
+
+// ierr l_rm_move_n(List *l, isize index, isize n) {
+//     ierr e = 0;
+//     CHECK_LIST_BOUNDS(l, index, &e, e);
+//     CHECK_LIST_BOUNDS(l, index + n - 1, &e, e);
+//     if (n <= 0) {
+//         return e;
+//     }
+//     if (l->len > index + n) {
+//         memcpy(l->buf.data + index * l->itemsize, l->buf.data + (index + n) * l->itemsize, (l->len - (index + n)) * l->itemsize);
+//     }
+//     l->len -= n;
+//     return e;
+// }
+
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+//     ierr e = 0;
+//     CHECK_GET_ALLOCATOR(a);
+//     CHECK_LIST_PTR(l, &e, e);
+//     CHECK_LIST_ITEMSIZE(l, &e, e);
+//     // CHECK_LIST_BOUNDS(l, index, &e, e);
+//     if (n <= 0) {
+//         return e;
+//     }
+//     e = _l_check_for_growth_and_grow(l, a);
+//     if (e != 0) {
+//         return e;
+//     }
+//     if (l->len - index < n) {
+//         n = l->len - index;
+//     }
+//     if (l->len >= l->cap) {
+//         e = _l_setcap_nochecks(l, l->cap * 2, a);
+//         if (e != 0) {
+//             return e;
+//         }
+//     }
+//     memmove(l->buf.data + (index + n) * l->itemsize, l->buf.data + index * l->itemsize, (l->len - index) * l->itemsize);
+//     memset(l->buf.data + index * l->itemsize, 0, n * l->itemsize);
+//     l->len += n;
+//     return e;
+// }
+
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+//     ierr e = 0;
+//     CHECK_GET_ALLOCATOR(a);
+//     CHECK_LIST_PTR(l, &e, e);
+//     CHECK_LIST_ITEMSIZE(l, &e, e);
+//     CHECK_LIST_BOUNDS(l, index, &e, e);
+//     if (n <= 0) {
+//         return e;
+//     }
+//     e = _l_check_for_growth_and_grow(l, a);
+//     if (e != 0) {
+//         return e;
+//     }
+//     if (l->len - index < n) {
+//         n = l->len - index;
+//     }
+//     memcpy(l->buf.data + (index + n) * l->itemsize, l->buf.data + index * l->itemsize, (l->len - index) * l->itemsize);
+//     memset(l->buf.data + index * l->itemsize, 0, n * l->itemsize);
+//     l->len += n;
+//     return e;
+// }
+
+// ierr l_clear(List *l) {
+//     ierr e = 0;
+//     CHECK_LIST_PTR(l, &e, e);
+//     l->len = 0;
+//     return e;
+// }
+
+
+
+
+
+
+/* remove item. moves other items. slow, but keeps the order
+
+ierr l_rm_move(List *l, isize index) {
+    ierr e = 0;
+    CHECK_LIST_BOUNDS(l, index, &e, e);
+    if (l->len > 1) {
+        // Move items after the index to the left by one position
+        memmove(
+            l->buf.data + index * l->itemsize,
+            l->buf.data + (index + 1) * l->itemsize,
+            (l->len - index - 1) * l->itemsize
+        );
+        l->len -= 1;
+    } else if (l->len == 1) {
+        // If there's only one item, simply set the length to 0
+        l->len = 0;
+    } else {
+        // If the list is empty, there's nothing to do
+        // This should be handled by the CHECK_LIST_BOUNDS macro, but just in case
+        e = ERR_LIST_OUT_OF_BOUNDS;
+    }
+    return e;
+}
+
+
+ierr l_rm_move_n(List *l, isize index, isize n) {
+    ierr e = 0;
+    CHECK_LIST_BOUNDS(l, index, &e, e);
+    if (n <= 0) {
+        return e; // No items to remove
+    }
+    if (index + n > l->len) {
+        return ERR_LIST_OUT_OF_BOUNDS; // Not enough items to remove
+    }
+    if (l->len > 1) {
+        // Move items after the index to the left by `n` positions
+        memmove(l->buf.data + index * l->itemsize, l->buf.data + (index + n) * l->itemsize, (l->len - index - n) * l->itemsize);
+        l->len -= n;
+    } else if (l->len == n) {
+        // If the list length is equal to `n`, set the length to 0
+        l->len = 0;
+    } else {
+        // If the list is empty, there's nothing to do
+        e = ERR_LIST_OUT_OF_BOUNDS;
+    }
+    return e;
+}
+
+
+
+ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+    ierr e = 0;
+    CHECK_LIST_PTR(l, &e, e);
+    CHECK_ALLOC_SIZE(n, &e, e); // Check the size of the items to insert
+    CHECK_LIST_BOUNDS(l, index, &e, e);
+    if (n <= 0) {
+        return e; // No space to insert
+    }
+    if (index < 0 || index > l->cap) {
+        return ERR_LIST_OUT_OF_BOUNDS; // Invalid index
+    }
+
+    // Check if we need to increase the capacity
+    if (l->len + n > l->cap) {
+        e = l_setcap(l, max(l->cap * 2, l->len + n), a);
+        if (e != 0) {
+            return e;
+        }
+    }
+
+    // Move items after the index to the right by `n` positions
+    if (l->len > index) {
+        memmove(l->buf.data + (index + n) * l->itemsize, l->buf.data + index * l->itemsize, (l->len - index) * l->itemsize);
+    }
+
+    // Set the new items to NULL (empty)
+    byte *storage = l->buf.data;
+    storage += index * l->itemsize;
+    memset(storage, 0, n * l->itemsize); // Fill new space with zeros
+
+    l->len += n;
+    return e;
+}
+
+
+
+ierr l_clear(List *l) {
+    ierr e = 0;
+    CHECK_LIST_PTR(l, &e, e);
+    l->len = 0;
+    return e;
+}
 
 
 
@@ -167,7 +533,7 @@ ierr l_rm_swap(List *l, isize index) {
 
 
 
-
+*/
 
 
 

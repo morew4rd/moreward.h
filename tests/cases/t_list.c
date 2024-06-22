@@ -180,7 +180,7 @@ UTEST(list, list_push_remove_only) {
     EXPECT_EQ(l.len, 0);
 }
 
-UTEST(list, list_push_3_remove_first) {
+UTEST(list, list_push_3_remove_first__swap) {
     ierr e = 0;
     List l = {0};
     isize itemsize = sizeof(Pt);
@@ -221,7 +221,7 @@ UTEST(list, list_push_3_remove_first) {
 
 }
 
-UTEST(list, list_push_3_remove_second) {
+UTEST(list, list_push_3_remove_second__swap) {
     ierr e = 0;
     List l = {0};
     isize itemsize = sizeof(Pt);
@@ -261,3 +261,307 @@ UTEST(list, list_push_3_remove_second) {
     EXPECT_EQ(rec->x, 3);
 
 }
+
+
+
+
+
+UTEST(list, list_push_3_remove_first__move) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(Pt);
+    Pt pt = {0};
+    Pt *rec = nil;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    pt.x = 1;
+    e = l_push(&l, &pt, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 1);
+
+    pt.x = 2;
+    e = l_push(&l, &pt, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    pt.x = 3;
+    e = l_push(&l, &pt, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 3);
+
+    e = l_rm_move(&l, 0);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(rec->x, 2);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(rec->x, 3);
+
+}
+
+UTEST(list, list_push_3_remove_second__move) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(Pt);
+    Pt pt = {0};
+    Pt *rec = nil;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    pt.x = 1;
+    e = l_push(&l, &pt, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 1);
+
+    pt.x = 2;
+    e = l_push(&l, &pt, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    pt.x = 3;
+    e = l_push(&l, &pt, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 3);
+
+    e = l_rm_move(&l, 1);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(rec->x, 1);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(rec->x, 3);
+}
+
+UTEST(list, list_clear){
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+    e = l_clear(&l);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+}
+
+UTEST(list, list_push_remove_range) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+    /* remove 3 items starting from index 1 */
+    e = l_rm_move_n(&l, 1, 3);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    /* verify the remaining items */
+    int *rec = nil;
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 1);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 5);
+}
+
+
+
+UTEST(list, list_push_remove_range__beginning) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+
+    /* remove 3 items starting from index 0 */
+    e = l_rm_move_n(&l, 0, 3);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    /* verify the remaining items */
+    int *rec = nil;
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 4);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 5);
+}
+
+
+UTEST(list, list_push_remove_range__end) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+
+    /* remove 3 items starting from index 2 */
+    e = l_rm_move_n(&l, 2, 3);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 2);
+
+    /* verify the remaining items */
+    int *rec = nil;
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 1);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 2);
+}
+
+
+UTEST(list, list_push_remove_range__end_extra) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+
+    /* attempt to remove 4 items starting from index 2 */
+    e = l_rm_move_n(&l, 2, 4);
+    EXPECT_EQ(e, ERR_LIST_OUT_OF_BOUNDS);
+    EXPECT_EQ(l.len, 5);
+
+    /* verify the remaining items */
+    int *rec = nil;
+    rec = l_get(&l, 0, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 1);
+
+    rec = l_get(&l, 1, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 2);
+}
+
+UTEST(list, list_push_remove_range__all) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+
+    /* remove 5 items starting from index 0 */
+    e = l_rm_move_n(&l, 0, 5);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

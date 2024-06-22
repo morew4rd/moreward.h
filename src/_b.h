@@ -64,7 +64,12 @@ ierr l_push(List *l, void *item, Alloc *a);
 ierr l_put(List *l, void *item, isize index);
 void *l_pop(List *l, ierr *errptr);
 void *l_get(List *l, isize index, ierr *errptr);
-ierr l_rm_swap(List *l, isize index); /* does not keep the oder */
-ierr l_rm_move(List *l, isize index);  /* moves items */
+ierr l_clear(List *l) ;
+ierr l_rm_swap(List *l, isize index);
+ierr l_rm_move(List *l, isize index);
+ierr l_rm_move_n(List *l, isize index, isize n);
+// ierr l_insert(List *l, isize index, void *item, Alloc *a);
+// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
+
 
 #endif  /* _B_H_INCLUDED_ */
