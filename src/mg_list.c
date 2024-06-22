@@ -53,6 +53,7 @@ ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a) {
         e = ERR_LIST_ALREADY_INITIALIZED; /* already initialized */
         return e;
     }
+
     m_assert(l->buf.data == nil);
     m_assert(l->buf.size == 0);
 
@@ -81,6 +82,7 @@ ierr l_push(List *l, void *item, Alloc *a) {
     CHECK_GET_ALLOCATOR(a);
     CHECK_LIST_PTR(l, &e, e);
     CHECK_LIST_ITEMSIZE(l, &e, e);
+    CHECK_LIST_ITEM_PTR(item, &e, e);
     e = _l_check_for_growth_and_grow(l, a);
     if (e != 0) {
         return e;
@@ -95,6 +97,7 @@ ierr l_put(List *l, void *item, isize index) {
     ierr e = 0;
     CHECK_LIST_PTR(l, &e, e);
     CHECK_LIST_ITEMSIZE(l, &e, e);
+    CHECK_LIST_ITEM_PTR(item, &e, e);
     CHECK_LIST_BOUNDS(l, index, &e, e);
 
     _l_put_nochecks(l, item, index);

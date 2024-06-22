@@ -21,6 +21,7 @@ set(src_cases
     ./cases/t_smoke.c
     ./cases/t_basic.c
     ./cases/t_list.c
+    ./cases/t_aigen.c
 )
 
 # unit tests use implementation files, not the resulting 'moreward.h'
