@@ -23,8 +23,6 @@ Guide is TBD
 
 #include <stddef.h>
 
-/* basic macros  */
-
 #ifndef M_DISABLE_ASSERTS
 #include <assert.h>
 #define m_assert(x)     assert(x)
@@ -32,21 +30,17 @@ Guide is TBD
 #define m_assert(x)
 #endif
 
+#ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
+#define M_LIST_DEFAULT_INITIAL_CAPACITY     8
+#endif
+
+#ifndef M_LIST_MIN_EMPTY_SLOTS
+#define M_LIST_MIN_EMPTY_SLOTS              4
+#endif
+
 #define countof(a)      (isize)(sizeof(a) / sizeof(*(a)))
 #define max(a, b)       ((a)>(b) ? (a) : (b))
 #define min(a, b)       ((a)<(b) ? (a) : (b))
-
-
-#define nil NULL
-
-/*  c89 bool type  */
-
-typedef int bool;
-#define true (1)
-#define false (0)
-
-
-/*  shortcuts  */
 
 typedef float           f32;
 typedef double          f64;
@@ -64,18 +58,11 @@ typedef ptrdiff_t       isize;
 typedef u32             uint;
 typedef u64             uptr;
 typedef int             ierr;
+typedef int             ibool;
 
-
-#ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
-#define M_LIST_DEFAULT_INITIAL_CAPACITY     8
-#endif
-
-#ifndef M_LIST_MIN_EMPTY_SLOTS
-#define M_LIST_MIN_EMPTY_SLOTS              4
-#endif
-
-
-/* alloc and buffer errors */
+#define True    (1)
+#define False   (0)
+#define nil     NULL
 
 enum {
     ERR_ALLOC_NEG_SIZE              = 10001,
@@ -88,7 +75,6 @@ enum {
     ERR_LIST_OUT_OF_BOUNDS          = 12022,    /* if index > len - 1.  l_get  */
 };
 
-
 #define CHECK_GET_ALLOCATOR(a)                  if (!a) { a = default_alloc; }
 #define CHECK_ALLOC_SIZE(size, errptr, ret)     if (size < 0) { if (errptr) { *errptr = ERR_ALLOC_NEG_SIZE; } return ret; }
 #define CHECK_BUFFER_PTR(b, errptr, ret)        if (!b) { if (errptr) { *errptr = ERR_BUFFER_PTR_NIL; } return ret; }
@@ -96,7 +82,6 @@ enum {
 #define CHECK_LIST_ITEM_PTR(x, errptr, ret)     if (!x) { if (errptr) { *errptr = ERR_LIST_ITEM_PTR_NIL; } return ret; }
 #define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if (l->itemsize == 0) { if (errptr) { *errptr = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
 #define CHECK_LIST_BOUNDS(l, idx, errptr, ret)  if (idx < 0 || idx > l->len - 1) { *errptr = ERR_LIST_OUT_OF_BOUNDS; return ret; }
-
 
 typedef struct Alloc {
     void *udata;
@@ -116,7 +101,6 @@ typedef struct List {
     isize cap;  /* capacity (value = buffer.size / itemsize) */
     Buffer buf;
 } List;
-
 
 extern Alloc *default_alloc;
 
