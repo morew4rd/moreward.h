@@ -7,10 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED on)
 set(compiler_warnings "-Wall" "-Wextra")
 
 set(src_impl
-    ../src/_a.h
-    ../src/_b.h
-    ../src/_e.h
-    ../src/mg.h
+    ../src/m.h
     ../src/mg_alloc.c
     ../src/mg_buffer.c
     ../src/mg_list.c

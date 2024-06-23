@@ -1,4 +1,4 @@
-#include "mg.h"
+#include "m.h"
 
 #include <stdlib.h>
 

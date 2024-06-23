@@ -1,6 +1,50 @@
-#ifndef _B_H_INCLUDED_
-#define _B_H_INCLUDED_
-#include "_a.h"
+#ifndef _M_H_INCLUDED_
+#define _M_H_INCLUDED_
+/* this is dev/test time header. in the final "amalgamated" version (moreward.h), this is on the top of the file. */
+
+#include <stddef.h>
+
+/* basic macros  */
+
+#ifndef M_DISABLE_ASSERTS
+#include <assert.h>
+#define m_assert(x)     assert(x)
+#else
+#define m_assert(x)
+#endif
+
+#define countof(a)      (isize)(sizeof(a) / sizeof(*(a)))
+#define max(a, b)       ((a)>(b) ? (a) : (b))
+#define min(a, b)       ((a)<(b) ? (a) : (b))
+
+
+#define nil NULL
+
+/*  c89 bool type  */
+
+typedef int bool;
+#define true (1)
+#define false (0)
+
+
+/*  shortcuts  */
+
+typedef float           f32;
+typedef double          f64;
+typedef signed char     i8;
+typedef unsigned char   u8;
+typedef signed short    i16;
+typedef unsigned short  u16;
+typedef signed int      i32;
+typedef unsigned int    u32;
+typedef signed long     i64;
+typedef unsigned long   u64;
+typedef u8              byte;
+typedef size_t          usize;
+typedef ptrdiff_t       isize;
+typedef u32             uint;
+typedef u64             uptr;
+typedef int             ierr;
 
 
 #ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
@@ -74,5 +118,4 @@ ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
 ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
 
-
-#endif  /* _B_H_INCLUDED_ */
+#endif  /* _M_H_INCLUDED_ */

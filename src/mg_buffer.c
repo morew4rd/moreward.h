@@ -1,4 +1,4 @@
-#include "mg.h"
+#include "m.h"
 
 
 ierr b_setsize(Buffer *b, isize size, Alloc *a) {

@@ -66,8 +66,6 @@ typedef u64             uptr;
 typedef int             ierr;
 
 
-
-
 #ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
 #define M_LIST_DEFAULT_INITIAL_CAPACITY     8
 #endif
@@ -138,10 +136,6 @@ ierr l_rm_move(List *l, isize index);
 ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
 ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
-
-
-
-
 
 
 
