@@ -742,3 +742,31 @@ UTEST(list, list_insert_n__end) {
     EXPECT_EQ(*rec, 0);
 
 }
+
+UTEST(list, list_raw_buffer) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 0 ; i < 3; ++i) {
+        pt = i + 10;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 3);
+
+    int *raw_buf = l.buf.data;
+    for (i=0; i < l.len; i++) {
+        int val = raw_buf[i];
+        EXPECT_EQ(val, i + 10);
+    }
+
+}
