@@ -137,7 +137,7 @@ ierr l_rm_swap(List *l, isize index);
 ierr l_rm_move(List *l, isize index);
 ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
-// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
+ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
 
 
 
@@ -257,9 +257,9 @@ static void _l_put_nochecks(List *l, void *item, isize index) {
     memcpy(storage, item, l->itemsize);
 }
 
-static ierr _l_check_for_growth_and_grow(List *l, Alloc *a) {
+static ierr _l_check_for_growth_and_grow(List *l, isize extra, Alloc *a) {
     ierr e = 0;
-    if (l->len  >= l->cap - M_LIST_MIN_EMPTY_SLOTS ) {
+    if (l->len  >= l->cap + extra - M_LIST_MIN_EMPTY_SLOTS ) {
         e = _l_setcap_nochecks(l, l->cap * 2 + M_LIST_MIN_EMPTY_SLOTS,  a);
         if (e != 0) {
             return e;
@@ -308,7 +308,7 @@ ierr l_push(List *l, void *item, Alloc *a) {
     CHECK_LIST_PTR(l, &e, e);
     CHECK_LIST_ITEMSIZE(l, &e, e);
     CHECK_LIST_ITEM_PTR(item, &e, e);
-    e = _l_check_for_growth_and_grow(l, a);
+    e = _l_check_for_growth_and_grow(l, 0, a);
     if (e != 0) {
         return e;
     }
@@ -430,7 +430,7 @@ ierr l_insert(List *l, isize index, void *item, Alloc *a) {
 
      CHECK_LIST_BOUNDS(l, index, &e, e);
 
-     e = _l_check_for_growth_and_grow(l, a);
+     e = _l_check_for_growth_and_grow(l, 0, a);
      if (e != 0) {
          return e;
      }
@@ -451,14 +451,42 @@ ierr l_insert(List *l, isize index, void *item, Alloc *a) {
 }
 
 
-// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+/*  this function inserts n items at index by moving the other items away.
+    newly allocated items are initialized to zero.
+*/
+ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
+    ierr e = 0;
+    CHECK_GET_ALLOCATOR(a);
+    CHECK_LIST_PTR(l, &e, e);
 
-// }
+    if (index != l->len) {
+        // insert at the end OK
+        CHECK_LIST_BOUNDS(l, index, &e, e);
+    }
 
+    if (n <= 0) { return ERR_LIST_OUT_OF_BOUNDS; }
 
+    e = _l_check_for_growth_and_grow(l, n, a);
+    if (e != 0) {
+        return e;
+    }
 
+    if (index < l->len) {
+        /* Shift all items after index to the right by n */
+        memmove(
+            l->buf.data + (index + n) * l->itemsize,
+            l->buf.data + index * l->itemsize,
+            (l->len - index) * l->itemsize
+        );
+    }
 
+    /* Initialize new items to zero */
+    memset(l->buf.data + index * l->itemsize, 0, n * l->itemsize);
 
+    l->len += n;
+
+    return e;
+}
 
 #endif /* MOREWARD_H_IMPL */
 

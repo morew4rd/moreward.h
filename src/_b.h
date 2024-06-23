@@ -72,7 +72,7 @@ ierr l_rm_swap(List *l, isize index);
 ierr l_rm_move(List *l, isize index);
 ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
-// ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
+ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
 
 
 #endif  /* _B_H_INCLUDED_ */

@@ -613,10 +613,132 @@ UTEST(list, list_insert_tests) {
 
 
 
+UTEST(list, list_insert_n__middle) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+    int *rec = nil;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 1; i <= 5; ++i) {
+        pt = i;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+
+    e = l_insert_empty_n(&l, 1, 3, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 8);
+
+    rec = l_get(&l, 0, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 1);
+
+    rec = l_get(&l, 1, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 0);
+
+    rec = l_get(&l, 3, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 0);
+
+    rec = l_get(&l, 4, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 2);
+
+    rec = l_get(&l, 7, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 5);
+}
 
 
 
+UTEST(list, list_insert_n__head) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+    int *rec = nil;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 0 ; i < 3; ++i) {
+        pt = i + 10;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 3);
+
+   e = l_insert_empty_n(&l, 0, 2, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 5);
+
+    rec = l_get(&l, 0, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 0);
+
+    rec = l_get(&l, 1, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 0);
+
+    rec = l_get(&l, 2, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 10);
+
+    rec = l_get(&l, 3, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 11);
+
+    rec = l_get(&l, 4, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 12);
+
+}
 
 
 
+UTEST(list, list_insert_n__end) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+    int *rec = nil;
 
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 0 ; i < 3; ++i) {
+        pt = i + 10;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 3);
+
+   e = l_insert_empty_n(&l, 3, 2, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 5);
+
+    rec = l_get(&l, 0, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 10);
+
+    rec = l_get(&l, 1, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 11);
+
+    rec = l_get(&l, 2, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 12);
+
+    rec = l_get(&l, 3, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 0);
+
+    rec = l_get(&l, 4, &e); EXPECT_EQ(e, 0);
+    EXPECT_EQ(*rec, 0);
+
+}
