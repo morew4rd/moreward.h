@@ -6,9 +6,9 @@
 
 #ifndef M_DISABLE_ASSERTS
 #include <assert.h>
-#define m_assert(x)     assert(x)
+#define mg_assert(x)     assert(x)
 #else
-#define m_assert(x)
+#define mg_assert(x)
 #endif
 
 #ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
@@ -53,16 +53,17 @@ enum {
     ERR_LIST_ALREADY_INITIALIZED    = 12003,    /* if l_init is called on an initialized list */
     ERR_LIST_ITEMSIZE_NOT_SET       = 12004,    /* if l_setcap is called on an uninitialized list */
     ERR_LIST_NEG_ITEMSIZE           = 12005,    /* if l_setcap is called on an uninitialized list */
+    ERR_LIST_ITEM_NOT_FOUND         = 12006,    /* if l_find() can't find the given item. it also returns -1 as index. */
     ERR_LIST_OUT_OF_BOUNDS          = 12022,    /* if index > len - 1.  l_get  */
 };
 
-#define CHECK_GET_ALLOCATOR(a)                  if (!a) { a = default_alloc; }
+#define CHECK_GET_ALLOCATOR(a)                  if (!(a)) { a = default_alloc; }
 #define CHECK_ALLOC_SIZE(size, errptr, ret)     if (size < 0) { if (errptr) { *errptr = ERR_ALLOC_NEG_SIZE; } return ret; }
-#define CHECK_BUFFER_PTR(b, errptr, ret)        if (!b) { if (errptr) { *errptr = ERR_BUFFER_PTR_NIL; } return ret; }
-#define CHECK_LIST_PTR(l, errptr, ret)          if (!l) { if (errptr) { *errptr = ERR_LIST_PTR_NIL; } return ret; }
-#define CHECK_LIST_ITEM_PTR(x, errptr, ret)     if (!x) { if (errptr) { *errptr = ERR_LIST_ITEM_PTR_NIL; } return ret; }
-#define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if (l->itemsize == 0) { if (errptr) { *errptr = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
-#define CHECK_LIST_BOUNDS(l, idx, errptr, ret)  if (idx < 0 || idx > l->len - 1) { *errptr = ERR_LIST_OUT_OF_BOUNDS; return ret; }
+#define CHECK_BUFFER_PTR(b, errptr, ret)        if (!(b)) { if (errptr) { *errptr = ERR_BUFFER_PTR_NIL; } return ret; }
+#define CHECK_LIST_PTR(l, errptr, ret)          if (!(l)) { if (errptr) { *errptr = ERR_LIST_PTR_NIL; } return ret; }
+#define CHECK_LIST_ITEM_PTR(x, errptr, ret)     if (!(x)) { if (errptr) { *errptr = ERR_LIST_ITEM_PTR_NIL; } return ret; }
+#define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if ((l)->itemsize == 0) { if (errptr) { *errptr = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
+#define CHECK_LIST_BOUNDS(l, idx, errptr, ret)  if (idx < 0 || idx > (l)->len - 1) { *errptr = ERR_LIST_OUT_OF_BOUNDS; return ret; }
 
 typedef struct Alloc {
     void *udata;
@@ -83,6 +84,15 @@ typedef struct List {
     Buffer buf;
 } List;
 
+typedef struct Map {
+    List keys;
+    List values;
+} Map;
+
+// typedef struct String {
+//     List l;
+// } String;
+
 extern Alloc *default_alloc;
 
 Alloc *get_default_alloc(void);
@@ -95,11 +105,31 @@ ierr l_push(List *l, void *item, Alloc *a);
 ierr l_put(List *l, void *item, isize index);
 void *l_pop(List *l, ierr *errptr);
 void *l_get(List *l, isize index, ierr *errptr);
+ierr l_swap(List *l, isize i1, isize i2);
 ierr l_clear(List *l) ;
 ierr l_rm_swap(List *l, isize index);
 ierr l_rm_move(List *l, isize index);
 ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
 ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
+isize l_find(List *l, void *item, ierr *errptr);
+
+
+ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a);
+ierr m_setcap(Map *m, isize cap, Alloc *a);
+ierr m_put(Map *m, void *key, void *value, Alloc *a);
+void *m_get(Map *m, void *key, ierr *errptr);
+ierr m_rm(Map *m, void *key, Alloc *a);
+ierr m_clear(Map *m);
+
+// ierr s_setcap(String *s, isize cap, Alloc *a);
+// ierr s_cat(String *s, const char *cstr, Alloc *a);
+// ierr s_cat_format(String *s, const char *fmt, ...);
+// ierr s_cat_len(String *s, const char *cstr, isize len, Alloc *a);
+// ierr s_cat_str(String *s, String *s2, Alloc *a);
+// isize s_len(String *s, ierr *errptr);
+// isize s_cap(String *s, ierr *errptr);
+// ierr s_clear(String *s);
+
 
 #endif  /* _M_H_INCLUDED_ */

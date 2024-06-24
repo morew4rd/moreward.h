@@ -11,6 +11,7 @@ set(src_impl
     ../src/mg_alloc.c
     ../src/mg_buffer.c
     ../src/mg_list.c
+    ../src/mg_map.c
 )
 
 # these test cases are shared between unit and e2e tests
@@ -18,7 +19,8 @@ set(src_cases
     ./cases/t_smoke.c
     ./cases/t_basic.c
     ./cases/t_list.c
-    ./cases/t_aigen.c
+    ./cases/t_list_ai.c
+    ./cases/t_map_ai.c
 )
 
 # unit tests use implementation files, not the resulting 'moreward.h'

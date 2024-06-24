@@ -24,6 +24,7 @@ printf "\n#ifdef MOREWARD_H_IMPL\n\n"	    	>>  moreward.h
 sed '1d' src/mg_alloc.c						    >>  moreward.h
 sed '1d' src/mg_buffer.c					    >>  moreward.h
 sed '1d' src/mg_list.c	    				    >>  moreward.h
+sed '1d' src/mg_map.c	    				    >>  moreward.h
 
 # add end implementation include guard
 printf "\n#endif /* MOREWARD_H_IMPL */\n\n"	    >>  moreward.h

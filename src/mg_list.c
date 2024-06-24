@@ -40,7 +40,7 @@ static ierr _l_check_for_growth_and_grow(List *l, isize extra, Alloc *a) {
             return e;
         }
     }
-    m_assert(l->len < l->cap);
+    mg_assert(l->len < l->cap);
     return e;
 }
 
@@ -54,8 +54,8 @@ ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a) {
         return e;
     }
 
-    m_assert(l->buf.data == nil);
-    m_assert(l->buf.size == 0);
+    mg_assert(l->buf.data == nil);
+    mg_assert(l->buf.size == 0);
 
     if (itemsize <= 0) { itemsize = M_LIST_DEFAULT_INITIAL_CAPACITY; }
 
@@ -122,6 +122,31 @@ void *l_get(List *l, isize index, ierr *errptr) {
     storage += l->itemsize * index;
     return storage;
 }
+
+ierr l_swap(List *l, isize i1, isize i2) {
+    ierr e = 0;
+    void *item1 = nil;
+    void *item2 = nil;
+    void *tmp = nil;
+    CHECK_LIST_PTR(l, &e, e);
+    CHECK_LIST_BOUNDS(l, i1, &e, e);
+    CHECK_LIST_BOUNDS(l, i2, &e, e);
+
+    item1 = l_get(l, i1, &e);
+    if (e != 0) { return e; }
+    item2 = l_get(l, i2, &e);
+    if (e != 0) { return e; }
+
+    mg_assert(l->cap > l->len);
+    tmp = l->buf.data + l->len * l->itemsize;
+
+    memcpy(tmp, item1, l->itemsize);
+    memcpy(item1, item2, l->itemsize);
+    memcpy(item2, tmp, l->itemsize);
+
+    return e;
+}
+
 
 ierr l_clear(List *l) {
     ierr e = 0;
@@ -261,4 +286,23 @@ ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
     l->len += n;
 
     return e;
+}
+
+
+isize l_find(List *l, void *item, ierr *errptr) {
+    isize i;
+    CHECK_LIST_PTR(l, errptr, -1);
+    CHECK_LIST_ITEM_PTR(item, errptr, -1);
+
+    *errptr = 0;
+
+    for (i = 0; i < l->len; i++) {
+        void *current_item = l_get(l, i, errptr);
+        if (memcmp(current_item, item, l->itemsize) == 0) {
+            return i;
+        }
+    }
+
+    *errptr = ERR_LIST_ITEM_NOT_FOUND;
+    return -1;
 }

@@ -271,3 +271,38 @@ UTEST(aigen, list_setcap_valid_capacity) {
     EXPECT_NE(l.buf.data, nil);
     EXPECT_EQ(l.buf.size, 10 * 200);
 }
+
+
+UTEST(aigen, test_l_swap) {
+    ierr e = 0;
+    List l = {0};
+    int a = 1, b = 2, c = 3;
+
+    e = l_init(&l, sizeof(int), 3, nil);
+    EXPECT_EQ(e, 0);
+
+    e = l_push(&l, &a, nil);
+    EXPECT_EQ(e, 0);
+    e = l_push(&l, &b, nil);
+    EXPECT_EQ(e, 0);
+    e = l_push(&l, &c, nil);
+    EXPECT_EQ(e, 0);
+
+    e = l_swap(&l, 0, 1);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*(int*)l_get(&l, 0, &e), 2);
+    EXPECT_EQ(*(int*)l_get(&l, 1, &e), 1);
+
+    e = l_swap(&l, 1, 2);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*(int*)l_get(&l, 1, &e), 3);
+    EXPECT_EQ(*(int*)l_get(&l, 2, &e), 1);
+
+    e = l_swap(&l, 0, 2);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(*(int*)l_get(&l, 0, &e), 1);
+    EXPECT_EQ(*(int*)l_get(&l, 2, &e), 2);
+
+    e = l_clear(&l);
+    EXPECT_EQ(e, 0);
+}

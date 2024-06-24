@@ -770,3 +770,61 @@ UTEST(list, list_raw_buffer) {
     }
 
 }
+
+
+
+UTEST(list, list_find) {
+    ierr e = 0;
+    List l = {0};
+    isize itemsize = sizeof(int);
+    int pt = 0;
+    int i;
+    int *rec = nil;
+
+    /* init list */
+    e = l_init(&l, itemsize, 1, nil);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(l.len, 0);
+
+    /* push 5 items */
+    for (i = 0 ; i < 5; ++i) {
+        pt = i + 10;
+        e = l_push(&l, &pt, nil);
+        EXPECT_EQ(e, 0);
+    }
+    EXPECT_EQ(l.len, 5);
+
+    /* find existing item */
+    rec = l_get(&l, 2, &e); EXPECT_EQ(e, 0);
+    isize idx = l_find(&l, rec, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(idx, 2);
+
+    rec = l_get(&l, 4, &e); EXPECT_EQ(e, 0);
+    idx = l_find(&l, rec, &e);
+    EXPECT_EQ(e, 0);
+    EXPECT_EQ(idx, 4);
+
+    /* find non-existing item */
+    i = 99999;
+    idx = l_find(&l, &i, &e);
+    EXPECT_EQ(e, ERR_LIST_ITEM_NOT_FOUND);
+    EXPECT_EQ(idx, -1);
+
+    /* find nil item */
+    idx = l_find(&l, nil, &e);
+    EXPECT_EQ(e, ERR_LIST_ITEM_PTR_NIL);
+    EXPECT_EQ(idx, -1);
+
+    /* find empty list */
+    idx = l_find(nil, rec, &e);
+    EXPECT_EQ(e, ERR_LIST_PTR_NIL);
+    EXPECT_EQ(idx, -1);
+
+    /* find in empty list */
+    List empty_list = {0};
+    idx = l_find(&empty_list, rec, &e);
+    EXPECT_EQ(e, ERR_LIST_ITEM_NOT_FOUND);
+    EXPECT_EQ(idx, -1);
+
+}
