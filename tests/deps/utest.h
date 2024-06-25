@@ -310,7 +310,7 @@ UTEST_C_FUNC __declspec(dllimport) int __stdcall QueryPerformanceFrequency(
 #else
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/html5.h>
-#define UTEST_COLOUR_OUTPUT() false
+#define UTEST_COLOUR_OUTPUT() 0
 #else
 #include <unistd.h>
 #define UTEST_COLOUR_OUTPUT() (isatty(STDOUT_FILENO))

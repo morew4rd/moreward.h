@@ -5,8 +5,7 @@
 ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a) {
     ierr e = 0;
     CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(&m->keys, &e, e);
-    CHECK_LIST_PTR(&m->values, &e, e);
+    CHECK_MAP_PTR(m, &e, e);
 
     e = l_init(&m->keys, key_size, init_cap, a);
     if (e != 0) { return e; }
@@ -19,8 +18,8 @@ ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a) 
 ierr m_setcap(Map *m, isize cap, Alloc *a) {
     ierr e = 0;
     CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(&m->keys, &e, e);
-    CHECK_LIST_PTR(&m->values, &e, e);
+    CHECK_MAP_PTR(m, &e, e);
+    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
     CHECK_LIST_ITEMSIZE(&m->keys, &e, e);
     CHECK_LIST_ITEMSIZE(&m->values, &e, e);
 
@@ -37,8 +36,8 @@ ierr m_put(Map *m, void *key, void *value, Alloc *a) {
     isize idx = 0;
     void *key_storage = nil;
     CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(&m->keys, &e, e);
-    CHECK_LIST_PTR(&m->values, &e, e);
+    CHECK_MAP_PTR(m, &e, e);
+    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
     CHECK_LIST_ITEM_PTR(key, &e, e);
     CHECK_LIST_ITEM_PTR(value, &e, e);
 
@@ -70,8 +69,8 @@ void *m_get(Map *m, void *key, ierr *errptr) {
     isize idx = 0;
     void *value = nil;
     ierr e = 0;
-    CHECK_LIST_PTR(&m->keys, errptr, nil);
-    CHECK_LIST_PTR(&m->values, errptr, nil);
+    CHECK_MAP_PTR(m, errptr, nil);
+    CHECK_MAP_KEY_VAL_SIZE(m, errptr, nil);
     CHECK_LIST_ITEM_PTR(key, errptr, nil);
 
     idx = l_find(&m->keys, key, &e);
@@ -88,8 +87,8 @@ ierr m_rm(Map *m, void *key, Alloc *a) {
     ierr e = 0;
     isize idx = 0;
     CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(&m->keys, &e, e);
-    CHECK_LIST_PTR(&m->values, &e, e);
+    CHECK_MAP_PTR(m, &e, e);
+    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
     CHECK_LIST_ITEM_PTR(key, &e, e);
 
     idx = l_find(&m->keys, key, &e);
@@ -106,8 +105,8 @@ ierr m_rm(Map *m, void *key, Alloc *a) {
 
 ierr m_clear(Map *m) {
     ierr e = 0;
-    CHECK_LIST_PTR(&m->keys, &e, e);
-    CHECK_LIST_PTR(&m->values, &e, e);
+    CHECK_MAP_PTR(m, &e, e);
+    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
 
     e = l_clear(&m->keys);
     if (e == 0) {
