@@ -110,6 +110,8 @@ Alloc *get_default_alloc(void);
 
 ierr b_setsize(Buffer *b, isize size, Alloc *a);
 
+List *l_create(isize itemsize, isize init_cap, ierr *errptr, Alloc *a);
+ierr l_destroy(List *l, Alloc *a);
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
 ierr l_setcap(List *l, isize cap, Alloc *a);
 ierr l_push(List *l, void *item, Alloc *a);
@@ -124,14 +126,22 @@ ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
 ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
 isize l_find(List *l, void *item, ierr *errptr);
+isize l_len(List *l, ierr *errptr);
+isize l_cap(List *l, ierr *errptr);
 
+Map *m_create(isize key_size, isize value_size, isize init_cap, ierr *errptr, Alloc *a);
+ierr m_destroy(Map *l, Alloc *a);
 ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a);
 ierr m_setcap(Map *m, isize cap, Alloc *a);
 ierr m_put(Map *m, void *key, void *value, Alloc *a);
 void *m_get(Map *m, void *key, ierr *errptr);
 ierr m_rm(Map *m, void *key, Alloc *a);
 ierr m_clear(Map *m);
+isize m_len(Map *m, ierr *errptr);
+isize m_cap(Map *m, ierr *errptr);
 
+String *s_create(isize init_cap, ierr *errptr, Alloc *a);
+ierr s_destroy(String *s, Alloc *a);
 ierr s_setcap(String *s, isize cap, Alloc *a);
 isize s_len(String *s, ierr *errptr);
 isize s_cap(String *s, ierr *errptr);

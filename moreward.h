@@ -11,12 +11,132 @@ moreward.h
 What?
 -----
 
-Reusable single-file header library for C projects.
+Reusable single-file header library for C projects. Provides dynamic lists (arrays), maps and strings. Custom allocators can be used with the API.
 
-Guide
-------
+Almost all functions return an additional integer error value that is set to 0 on success.
 
-Guide is TBD
+HOW?
+----
+
+From exactly one .c file set `MOREWARD_H_IMPL` before including the library:
+```c
+#define MOREWARD_H_IMPL
+#include "moreward.h"
+```
+
+Some default values can be overridden with defines. See the header source for details.
+
+Other includes should be just:
+```c
+#include "moreward.h"
+```
+
+For some sample usage, see test cases.
+
+API
+---
+
+- l_create
+    creates a new list
+- l_destroy
+    destroys a list
+- l_init
+    initializes a list
+- l_setcap
+    sets the capacity of a list
+- l_push
+    adds an item to the end of a list
+- l_put
+    puts an item at a specific index in a list
+- l_pop
+    removes and returns the last item from a list
+ l_get
+    gets the item at a specific index in a list
+- l_swap
+    swaps two items in a list
+- l_clear
+    clears all items from a list
+- l_rm_swap
+    removes an item from a list by swapping with the last item
+- l_rm_move
+    removes an item from a list by moving subsequent items to fill the gap
+- l_rm_move_n
+    removes n items from a list starting at a specific index by moving subsequent items to fill the gaps
+- l_insert
+    inserts an item at a specific index in a list
+- l_insert_empty_n
+    inserts n empty items at a specific index in a list
+- l_find
+    finds the index of an item in a list
+- l_len
+    gets the number of items in a list
+- l_cap
+    gets the capacity of a list
+- m_create
+    creates a new map
+- m_destroy
+    destroys a map
+- m_init
+    initializes a map
+- m_setcap
+    sets the capacity of a map
+- m_put
+    puts a key-value pair into a map
+- m_get
+    gets the value associated with a key in a map
+- m_rm
+    removes a key-value pair from a map
+- m_clear
+    clears all key-value pairs from a map
+- m_len
+    gets the number of key-value pairs in a map
+- m_cap
+    gets the capacity of a map
+- s_create
+    creates a new string
+- s_destroy
+    destroys a string
+- s_setcap
+    sets the capacity of a string
+- s_len
+    gets the number of characters in a string
+- s_cap
+    gets the capacity of a string
+- s_clear
+    clears the contents of a string
+- s_get
+    gets the contents of a string
+- s_cat
+    concatenates a const C string to the end of a string
+- s_cat_cstr
+    concatenates a C string to the end of a string
+- s_cat_char
+    concatenates a character to the end of a string
+- s_cat_f32
+    concatenates a float to the end of a string
+- s_cat_f64
+    concatenates a double to the end of a string
+- s_cat_i8
+    concatenates an 8-bit integer to the end of a string
+- s_cat_i16
+    concatenates a 16-bit integer to the end of a string
+- s_cat_i32
+    concatenates a 32-bit integer to the end of a string
+- s_cat_i64
+    concatenates a 64-bit integer to the end of a string
+- s_cat_isize
+    concatenates a size_t to the end of a string
+- s_cat_u8
+    concatenates an 8-bit unsigned integer to the end of a string
+- s_cat_u16
+    concatenates a 16-bit unsigned integer to the end of a string
+- s_cat_u32
+    concatenates a 32-bit unsigned integer to the end of a string
+- s_cat_u64
+    concatenates a 64-bit unsigned integer to the end of a string
+- s_cat_usize
+    concatenates a usize to the end of a string
+
 
 */
 
@@ -129,6 +249,8 @@ Alloc *get_default_alloc(void);
 
 ierr b_setsize(Buffer *b, isize size, Alloc *a);
 
+List *l_create(isize itemsize, isize init_cap, ierr *errptr, Alloc *a);
+ierr l_destroy(List *l, Alloc *a);
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
 ierr l_setcap(List *l, isize cap, Alloc *a);
 ierr l_push(List *l, void *item, Alloc *a);
@@ -143,14 +265,22 @@ ierr l_rm_move_n(List *l, isize index, isize n);
 ierr l_insert(List *l, isize index, void *item, Alloc *a);
 ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
 isize l_find(List *l, void *item, ierr *errptr);
+isize l_len(List *l, ierr *errptr);
+isize l_cap(List *l, ierr *errptr);
 
+Map *m_create(isize key_size, isize value_size, isize init_cap, ierr *errptr, Alloc *a);
+ierr m_destroy(Map *l, Alloc *a);
 ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a);
 ierr m_setcap(Map *m, isize cap, Alloc *a);
 ierr m_put(Map *m, void *key, void *value, Alloc *a);
 void *m_get(Map *m, void *key, ierr *errptr);
 ierr m_rm(Map *m, void *key, Alloc *a);
 ierr m_clear(Map *m);
+isize m_len(Map *m, ierr *errptr);
+isize m_cap(Map *m, ierr *errptr);
 
+String *s_create(isize init_cap, ierr *errptr, Alloc *a);
+ierr s_destroy(String *s, Alloc *a);
 ierr s_setcap(String *s, isize cap, Alloc *a);
 isize s_len(String *s, ierr *errptr);
 isize s_cap(String *s, ierr *errptr);
@@ -255,6 +385,95 @@ ierr b_setsize(Buffer *b, isize size, Alloc *a) {
 
     return e;
 }
+#include <string.h>
+
+List *l_create(isize itemsize, isize init_cap, ierr *errptr, Alloc *a) {
+    ierr e = 0;
+    List *l = nil;
+    CHECK_GET_ALLOCATOR(a);
+    l = (List *)a->malloc(sizeof(List), a->udata);
+    if (!l) {
+        if (errptr) { *errptr = ERR_LIST_PTR_NIL; }
+        return nil;
+    }
+    memset(l, 0, sizeof(List));
+    e = l_init(l, itemsize, init_cap, a);
+    if (e != 0) {
+        a->free(l, a->udata);
+        if (errptr) { *errptr = e; }
+        return nil;
+    }
+    if (errptr) { *errptr = e; }
+    return l;
+}
+
+ierr l_destroy(List *l, Alloc *a) {
+    ierr e = 0;
+    CHECK_GET_ALLOCATOR(a);
+    CHECK_LIST_PTR(l, &e, e);
+    e = l_setcap(l, 0, a);
+    a->free(l, a->udata);
+    return e;
+}
+
+Map *m_create(isize key_size, isize value_size, isize init_cap, ierr *errptr, Alloc *a) {
+    ierr e = 0;
+    Map *m = nil;
+    CHECK_GET_ALLOCATOR(a);
+    m = (Map *)a->malloc(sizeof(Map), a->udata);
+    if (!m) {
+        if (errptr) { *errptr = ERR_MAP_PTR_NIL; }
+        return nil;
+    }
+    memset(m, 0, sizeof(Map));
+    e = m_init(m, key_size, value_size, init_cap, a);
+    if (e != 0) {
+        a->free(m, a->udata);
+        if (errptr) { *errptr = e; }
+        return nil;
+    }
+    if (errptr) { *errptr = e; }
+    return m;
+}
+
+ierr m_destroy(Map *m, Alloc *a) {
+    ierr e = 0;
+    CHECK_GET_ALLOCATOR(a);
+    CHECK_MAP_PTR(m, &e, e);
+    e = m_setcap(m, 0, a);;
+    a->free(m, a->udata);
+    return e;
+}
+
+String *s_create(isize init_cap, ierr *errptr, Alloc *a) {
+    ierr e = 0;
+    String *s = nil;
+    CHECK_GET_ALLOCATOR(a);
+    s = (String *)a->malloc(sizeof(String), a->udata);
+    if (!s) {
+        if (errptr) { *errptr = ERR_STRING_PTR_NIL; }
+        return nil;
+    }
+    memset(s, 0, sizeof(String));
+    e = l_init(&s->l, 1, init_cap, a);
+    if (e != 0) {
+        a->free(s, a->udata);
+        if (errptr) { *errptr = e; }
+        return nil;
+    }
+    if (errptr) { *errptr = e; }
+    return s;
+}
+
+ierr s_destroy(String *s, Alloc *a) {
+    ierr e = 0;
+    CHECK_GET_ALLOCATOR(a);
+    CHECK_STRING_PTR(s, &e, e);
+    e = s_setcap(s, 0, a);
+    a->free(s, a->udata);
+    return e;
+}
+
 #include <string.h>
 
 /* utility function for setting list capacity. only checks for the allocation size */
@@ -561,6 +780,22 @@ isize l_find(List *l, void *item, ierr *errptr) {
     *errptr = ERR_LIST_ITEM_NOT_FOUND;
     return -1;
 }
+
+isize l_len(List *l, ierr *errptr) {
+    isize len = 0;
+    CHECK_LIST_PTR(l, errptr, -1);
+    len = l->len;
+    return len;
+}
+
+isize l_cap(List *l, ierr *errptr) {
+    isize cap = 0;
+    CHECK_LIST_PTR(l, errptr, -1);
+    cap = l->cap;
+    return cap;
+}
+
+
 #include <string.h>
 
 ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a) {
@@ -676,16 +911,39 @@ ierr m_clear(Map *m) {
     mg_assert(m->keys.len == m->values.len);
     return e;
 }
+
+
+isize m_len(Map *m, ierr *errptr) {
+    isize len = 0;
+    CHECK_MAP_PTR(m, errptr, -1);
+    len = m->keys.len;
+    return len;
+}
+
+isize m_cap(Map *m, ierr *errptr) {
+    isize cap = 0;
+    CHECK_MAP_PTR(m, errptr, -1);
+    cap = m->keys.cap;
+    return cap;
+}
+
+
 #include <string.h>
 #include <stdio.h>
 
 
 ierr s_setcap(String *s, isize cap, Alloc *a) {
     ierr e = 0;
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
     s->l.itemsize = 1;
     e = l_setcap(&s->l, cap, a);
-    *(char *)(s->l.buf.data + s->l.len * s->l.itemsize) = '\0';
+    if (s->l.cap > 0) {
+        if (s->l.len >= s->l.cap) {
+            s->l.len = s->l.cap - 1;
+        }
+        memset(s->l.buf.data + s->l.len, 0, s->l.cap - s->l.len); // ensure zeros at the end "\0"
+    }
     return e;
 }
 
@@ -716,6 +974,7 @@ ierr s_cat(String *s, const char *cstr, Alloc *a) {
     ierr e = 0;
     isize cstr_len = 0;
     isize new_len = 0;
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
     CHECK_STRING_PTR(cstr, &e, e);
 
@@ -738,6 +997,7 @@ ierr s_cat_cstr(String *s, char *cstr, Alloc *a) {
     ierr e = 0;
     isize cstr_len = 0;
     isize new_len = 0;
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
     CHECK_STRING_PTR(cstr, &e, e);
 
@@ -759,6 +1019,7 @@ ierr s_cat_cstr(String *s, char *cstr, Alloc *a) {
 ierr s_cat_char(String *s, char c, Alloc *a) {
     ierr e = 0;
     isize new_len = 0;
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     new_len = s->l.len + 1;
@@ -778,6 +1039,7 @@ ierr s_cat_f32(String *s, f32 f, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%f", f);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -789,6 +1051,7 @@ ierr s_cat_f64(String *s, f64 f, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%lf", f);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -800,6 +1063,7 @@ ierr s_cat_i8(String *s, i8 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%d", (int)x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -811,6 +1075,7 @@ ierr s_cat_i16(String *s, i16 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%d", (int)x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -822,6 +1087,7 @@ ierr s_cat_i32(String *s, i32 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%d", x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -833,6 +1099,7 @@ ierr s_cat_i64(String *s, i64 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%ld", x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -844,6 +1111,7 @@ ierr s_cat_isize(String *s, isize i, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%ld", i);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -855,6 +1123,7 @@ ierr s_cat_u8(String *s, u8 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%u", (unsigned int)x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -866,6 +1135,7 @@ ierr s_cat_u16(String *s, u16 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%u", (unsigned int)x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -877,6 +1147,7 @@ ierr s_cat_u32(String *s, u32 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%u", x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -888,6 +1159,7 @@ ierr s_cat_u64(String *s, u64 x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%lu", x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -899,6 +1171,7 @@ ierr s_cat_usize(String *s, usize x, Alloc *a) {
     ierr e = 0;
     char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
     int len; (void)len; len = sprintf(buffer, "%zu", x);
+    CHECK_GET_ALLOCATOR(a);
     CHECK_STRING_PTR(s, &e, e);
 
     e = s_cat_cstr(s, buffer, a);
@@ -909,7 +1182,26 @@ ierr s_cat_usize(String *s, usize x, Alloc *a) {
 
 /*
 
-MIT license
+Copyright (c) 2024 moreward
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 
 */
 

@@ -306,3 +306,18 @@ isize l_find(List *l, void *item, ierr *errptr) {
     *errptr = ERR_LIST_ITEM_NOT_FOUND;
     return -1;
 }
+
+isize l_len(List *l, ierr *errptr) {
+    isize len = 0;
+    CHECK_LIST_PTR(l, errptr, -1);
+    len = l->len;
+    return len;
+}
+
+isize l_cap(List *l, ierr *errptr) {
+    isize cap = 0;
+    CHECK_LIST_PTR(l, errptr, -1);
+    cap = l->cap;
+    return cap;
+}
+

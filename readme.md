@@ -1,12 +1,6 @@
 moreward.h
 ==========
 
-What?
------
+Reusable single-file header library for C projects. Provides dynamic lists (arrays), maps and strings. Custom allocators can be used with the API.
 
-Reusable single-file header library for C projects.
-
-Guide
-------
-
-Guide is TBD
+Copy `moreward.h` file to your project. See `guide.md` file or the top of the header for usage info.

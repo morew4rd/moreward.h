@@ -10,6 +10,7 @@ set(src_impl
     ../src/m.h
     ../src/mg_alloc.c
     ../src/mg_buffer.c
+    ../src/mg_create_destroy.c
     ../src/mg_list.c
     ../src/mg_map.c
     ../src/mg_string.c
@@ -23,6 +24,7 @@ set(src_cases
     ./cases/t_list_ai.c
     ./cases/t_map_ai.c
     ./cases/t_string_ai.c
+    ./cases/t_createdestroy_ai.c
 )
 
 # unit tests use implementation files, not the resulting 'moreward.h'

@@ -115,3 +115,19 @@ ierr m_clear(Map *m) {
     mg_assert(m->keys.len == m->values.len);
     return e;
 }
+
+
+isize m_len(Map *m, ierr *errptr) {
+    isize len = 0;
+    CHECK_MAP_PTR(m, errptr, -1);
+    len = m->keys.len;
+    return len;
+}
+
+isize m_cap(Map *m, ierr *errptr) {
+    isize cap = 0;
+    CHECK_MAP_PTR(m, errptr, -1);
+    cap = m->keys.cap;
+    return cap;
+}
+
