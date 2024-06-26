@@ -13,7 +13,7 @@ UTEST(create_destroy, test_list_create){
     List *l = nil;
     ierr e = 0;
 
-    l = l_create(TEST_ITEM_SIZE, TEST_INIT_CAP, &e, nil);
+    l = l_create(TEST_ITEM_SIZE, TEST_INIT_CAP, nil, &e);
     EXPECT_EQ(e, 0);
     EXPECT_NE((void *)l, nil);
     EXPECT_EQ(l->itemsize, TEST_ITEM_SIZE);
@@ -30,7 +30,7 @@ UTEST(create_destroy, test_map_create){
     Map *m = nil;
     ierr e = 0;
 
-    m = m_create(TEST_ITEM_SIZE, TEST_ITEM_SIZE, TEST_INIT_CAP, &e, nil);
+    m = m_create(TEST_ITEM_SIZE, TEST_ITEM_SIZE, TEST_INIT_CAP, nil, &e);
     EXPECT_EQ(e, 0);
     EXPECT_NE((void *)m, nil);
     EXPECT_EQ(m->keys.itemsize, TEST_ITEM_SIZE);
@@ -52,7 +52,7 @@ UTEST(create_destroy, test_string_create){
     String *s = nil;
     ierr e = 0;
 
-    s = s_create(TEST_INIT_CAP, &e, nil);
+    s = s_create(TEST_INIT_CAP, nil, &e);
     EXPECT_EQ(e, 0);
     EXPECT_NE((void *)s, nil);
     EXPECT_EQ(s->l.itemsize, 1);

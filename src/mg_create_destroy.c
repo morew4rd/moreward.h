@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-List *l_create(isize itemsize, isize init_cap, ierr *errptr, Alloc *a) {
+List *l_create(isize itemsize, isize init_cap, Alloc *a, ierr *errptr) {
     ierr e = 0;
     List *l = nil;
     CHECK_GET_ALLOCATOR(a);
@@ -31,7 +31,7 @@ ierr l_destroy(List *l, Alloc *a) {
     return e;
 }
 
-Map *m_create(isize key_size, isize value_size, isize init_cap, ierr *errptr, Alloc *a) {
+Map *m_create(isize key_size, isize value_size, isize init_cap, Alloc *a, ierr *errptr) {
     ierr e = 0;
     Map *m = nil;
     CHECK_GET_ALLOCATOR(a);
@@ -60,7 +60,7 @@ ierr m_destroy(Map *m, Alloc *a) {
     return e;
 }
 
-String *s_create(isize init_cap, ierr *errptr, Alloc *a) {
+String *s_create(isize init_cap, Alloc *a, ierr *errptr) {
     ierr e = 0;
     String *s = nil;
     CHECK_GET_ALLOCATOR(a);

@@ -50,7 +50,7 @@ API
     puts an item at a specific index in a list
 - l_pop
     removes and returns the last item from a list
- l_get
+- l_get
     gets the item at a specific index in a list
 - l_swap
     swaps two items in a list
@@ -249,7 +249,7 @@ Alloc *get_default_alloc(void);
 
 ierr b_setsize(Buffer *b, isize size, Alloc *a);
 
-List *l_create(isize itemsize, isize init_cap, ierr *errptr, Alloc *a);
+List *l_create(isize itemsize, isize init_cap, Alloc *, ierr *errptra);
 ierr l_destroy(List *l, Alloc *a);
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
 ierr l_setcap(List *l, isize cap, Alloc *a);
@@ -268,7 +268,7 @@ isize l_find(List *l, void *item, ierr *errptr);
 isize l_len(List *l, ierr *errptr);
 isize l_cap(List *l, ierr *errptr);
 
-Map *m_create(isize key_size, isize value_size, isize init_cap, ierr *errptr, Alloc *a);
+Map *m_create(isize key_size, isize value_size, isize init_cap, Alloc *a, ierr *errptr);
 ierr m_destroy(Map *l, Alloc *a);
 ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a);
 ierr m_setcap(Map *m, isize cap, Alloc *a);
@@ -279,7 +279,7 @@ ierr m_clear(Map *m);
 isize m_len(Map *m, ierr *errptr);
 isize m_cap(Map *m, ierr *errptr);
 
-String *s_create(isize init_cap, ierr *errptr, Alloc *a);
+String *s_create(isize init_cap, Alloc *, ierr *errptra);
 ierr s_destroy(String *s, Alloc *a);
 ierr s_setcap(String *s, isize cap, Alloc *a);
 isize s_len(String *s, ierr *errptr);
@@ -387,7 +387,7 @@ ierr b_setsize(Buffer *b, isize size, Alloc *a) {
 }
 #include <string.h>
 
-List *l_create(isize itemsize, isize init_cap, ierr *errptr, Alloc *a) {
+List *l_create(isize itemsize, isize init_cap, Alloc *a, ierr *errptr) {
     ierr e = 0;
     List *l = nil;
     CHECK_GET_ALLOCATOR(a);
@@ -416,7 +416,7 @@ ierr l_destroy(List *l, Alloc *a) {
     return e;
 }
 
-Map *m_create(isize key_size, isize value_size, isize init_cap, ierr *errptr, Alloc *a) {
+Map *m_create(isize key_size, isize value_size, isize init_cap, Alloc *a, ierr *errptr) {
     ierr e = 0;
     Map *m = nil;
     CHECK_GET_ALLOCATOR(a);
@@ -445,7 +445,7 @@ ierr m_destroy(Map *m, Alloc *a) {
     return e;
 }
 
-String *s_create(isize init_cap, ierr *errptr, Alloc *a) {
+String *s_create(isize init_cap, Alloc *a, ierr *errptr) {
     ierr e = 0;
     String *s = nil;
     CHECK_GET_ALLOCATOR(a);

@@ -40,7 +40,7 @@ UTEST(smoke_tests_shared, string_create_destroy) {
     String *s = nil;
     ierr e = 0;
 
-    s = s_create(100, &e, nil);
+    s = s_create(100, nil, &e);
     EXPECT_EQ(e, 0);
     EXPECT_NE((void *)s, nil);
 

@@ -8,7 +8,7 @@ printf "#define _MOREWARD_H_\n"				    >>  moreward.h
 
 # add comment/guide at the top
 printf "\n/*\n"								    >>  moreward.h
-printf "\nLicense info is at the end.\n\n"		>>	moreward.h
+printf "\nLicense info is at the EOF .\n\n"		>>	moreward.h
 cat guide.md							    	>>  moreward.h
 printf "\n*/\n\n"							  	>>  moreward.h
 
