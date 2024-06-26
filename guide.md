@@ -43,7 +43,7 @@ API
     puts an item at a specific index in a list
 - l_pop
     removes and returns the last item from a list
- l_get
+- l_get
     gets the item at a specific index in a list
 - l_swap
     swaps two items in a list
