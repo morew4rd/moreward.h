@@ -763,7 +763,7 @@ UTEST(list, list_raw_buffer) {
     }
     EXPECT_EQ(l.len, 3);
 
-    int *raw_buf = l.buf.data;
+    int *raw_buf = (int *)l.buf.data;
     for (i=0; i < l.len; i++) {
         int val = raw_buf[i];
         EXPECT_EQ(val, i + 10);

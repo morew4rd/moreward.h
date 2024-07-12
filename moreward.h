@@ -224,7 +224,7 @@ typedef struct Alloc {
 
 typedef struct Buffer {
     isize size;  /* in bytes */
-    void *data;
+    u8 *data;
 } Buffer;
 
 typedef struct List {
@@ -967,7 +967,7 @@ ierr s_clear(String *s) {
 
 char *s_get(String *s, ierr *errptr) {
     CHECK_STRING_PTR(s, errptr, nil);
-    return s->l.buf.data;
+    return (char *)s->l.buf.data;
 }
 
 ierr s_cat(String *s, const char *cstr, Alloc *a) {

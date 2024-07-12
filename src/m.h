@@ -85,7 +85,7 @@ typedef struct Alloc {
 
 typedef struct Buffer {
     isize size;  /* in bytes */
-    void *data;
+    u8 *data;
 } Buffer;
 
 typedef struct List {
