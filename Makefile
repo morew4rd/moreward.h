@@ -32,7 +32,7 @@ clean-tests:
 
 config-tests:
 	@echo "\n================================== MAKE =======\n==> config\n"
-	cmake -S tests -B _b
+	cmake  -DCMAKE_BUILD_TYPE=Debug -S tests -B _b
 
 build-tests:
 	@echo "\n================================== MAKE =======\n==> build-tests\n"

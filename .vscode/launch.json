@@ -2,10 +2,10 @@
     "version": "2.0.0",
     "configurations": [
          {
-            "name": "(lldb) Launch",
+            "name": "(lldb) Launch unit tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/_b/test_e2e",
+            "program": "${workspaceFolder}/_b/test_unit",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

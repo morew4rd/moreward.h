@@ -3,7 +3,7 @@
 
 /*
 
-License info is at the end.
+License info is at the EOF .
 
 moreward.h
 ==========
@@ -249,7 +249,7 @@ Alloc *get_default_alloc(void);
 
 ierr b_setsize(Buffer *b, isize size, Alloc *a);
 
-List *l_create(isize itemsize, isize init_cap, Alloc *, ierr *errptra);
+List *l_create(isize itemsize, isize init_cap, Alloc *a, ierr *errptr);
 ierr l_destroy(List *l, Alloc *a);
 ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
 ierr l_setcap(List *l, isize cap, Alloc *a);
@@ -279,7 +279,7 @@ ierr m_clear(Map *m);
 isize m_len(Map *m, ierr *errptr);
 isize m_cap(Map *m, ierr *errptr);
 
-String *s_create(isize init_cap, Alloc *, ierr *errptra);
+String *s_create(isize init_cap, Alloc *a, ierr *errptr);
 ierr s_destroy(String *s, Alloc *a);
 ierr s_setcap(String *s, isize cap, Alloc *a);
 isize s_len(String *s, ierr *errptr);
