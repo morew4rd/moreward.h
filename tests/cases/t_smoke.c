@@ -63,7 +63,7 @@ UTEST(smoke_tests_shared, string_create_destroy) {
     e = s_clear(s);
     EXPECT_EQ(e, 0);
     EXPECT_EQ(s_len(s, nil), 0);
-    EXPECT_EQ(s_cap(s, nil), 10);
+    EXPECT_EQ(s_cap(s, nil), 100);
     EXPECT_STREQ(s_get(s, nil), "");
 
     e = s_destroy(s, nil);

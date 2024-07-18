@@ -19,6 +19,12 @@ ierr s_setcap(String *s, isize cap, Alloc *a) {
     return e;
 }
 
+static ierr _check_len_add_cap(String *s, isize newlen, Alloc *a) {
+    if (s->l.cap < newlen) {
+        return s_setcap(s, newlen, a);
+    }
+    return 0;
+}
 
 isize s_len(String *s, ierr *errptr) {
     CHECK_STRING_PTR(s, errptr, -1);
@@ -54,7 +60,7 @@ ierr s_cat(String *s, const char *cstr, Alloc *a) {
     // TODO: MAX check?
     new_len = s->l.len + cstr_len;
 
-    e = l_setcap(&s->l, new_len, a);
+    e = _check_len_add_cap(s, new_len, a);
     if (e != 0) {
         return e;
     }
@@ -77,7 +83,7 @@ ierr s_cat_cstr(String *s, char *cstr, Alloc *a) {
     // TODO: MAX check?
     new_len = s->l.len + cstr_len;
 
-    e = l_setcap(&s->l, new_len, a);
+    e = _check_len_add_cap(s, new_len, a);
     if (e != 0) {
         return e;
     }
@@ -96,7 +102,7 @@ ierr s_cat_char(String *s, char c, Alloc *a) {
 
     new_len = s->l.len + 1;
 
-    e = l_setcap(&s->l, new_len, a);
+    e = _check_len_add_cap(s, new_len, a);
     if (e != 0) {
         return e;
     }
