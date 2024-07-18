@@ -105,11 +105,13 @@ ierr l_put(List *l, void *item, isize index) {
 }
 
 void *l_pop(List *l, ierr *errptr) {
+    int e = 0;
     isize idx = l->len - 1;
-    void *item = l_get(l, idx, errptr);
-    if (*errptr == 0) {
+    void *item = l_get(l, idx, &e);
+    if (e == 0) {
         l->len -= 1;
     }
+    if (errptr) { *errptr = e; }
     return item;
 }
 
@@ -117,7 +119,7 @@ void *l_get(List *l, isize index, ierr *errptr) {
     byte *storage = nil;
     CHECK_LIST_PTR(l, errptr, nil);
     CHECK_LIST_BOUNDS(l, index, errptr, nil);
-    *errptr = 0;
+    ZERO_ERRPTR(errptr);
     storage = l->buf.data;
     storage += l->itemsize * index;
     return storage;
@@ -294,7 +296,7 @@ isize l_find(List *l, void *item, ierr *errptr) {
     CHECK_LIST_PTR(l, errptr, -1);
     CHECK_LIST_ITEM_PTR(item, errptr, -1);
 
-    *errptr = 0;
+    ZERO_ERRPTR(errptr);
 
     for (i = 0; i < l->len; i++) {
         void *current_item = l_get(l, i, errptr);
@@ -303,7 +305,7 @@ isize l_find(List *l, void *item, ierr *errptr) {
         }
     }
 
-    *errptr = ERR_LIST_ITEM_NOT_FOUND;
+    if (errptr) { *errptr = ERR_LIST_ITEM_NOT_FOUND; }
     return -1;
 }
 

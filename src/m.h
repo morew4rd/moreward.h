@@ -76,6 +76,8 @@ enum {
 #define CHECK_MAP_KEY_VAL_SIZE(m, errptr, ret)  if ((m)->keys.itemsize == 0 || (m)->values.itemsize == 0) { if (errptr) { *(errptr) = ERR_MAP_KEY_VAL_SIZE_NOT_SET; } return ret; }
 #define CHECK_STRING_PTR(s, errptr, ret)        if (!(s)) { if (errptr) { *(errptr) = ERR_STRING_PTR_NIL; } return ret; }
 
+#define ZERO_ERRPTR(errptr) if (errptr) { *(errptr) = 0; }
+
 typedef struct Alloc {
     void *udata;
     void * (*malloc)(isize size, void *udata);
