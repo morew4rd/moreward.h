@@ -952,8 +952,12 @@ ierr s_setcap(String *s, isize cap, Alloc *a) {
 }
 
 static ierr _check_len_add_cap(String *s, isize newlen, Alloc *a) {
-    if (s->l.cap < newlen) {
-        return s_setcap(s, newlen, a);
+    ierr e = 0;
+    if (s->l.cap < newlen + 1) {
+        e = s_setcap(s, newlen, a);
+        if (e) { return e; }
+        s->l.buf.data[newlen] = 0;
+
     }
     return 0;
 }
@@ -999,6 +1003,7 @@ ierr s_cat(String *s, const char *cstr, Alloc *a) {
 
     memcpy(s->l.buf.data + s->l.len * s->l.itemsize, cstr, cstr_len);
     s->l.len += cstr_len;
+    s->l.buf.data[s->l.len] = 0;
 
     return e;
 }
@@ -1022,6 +1027,7 @@ ierr s_cat_cstr(String *s, char *cstr, Alloc *a) {
 
     memcpy(s->l.buf.data + s->l.len * s->l.itemsize, cstr, cstr_len);
     s->l.len += cstr_len;
+    s->l.buf.data[s->l.len] = 0;
 
     return e;
 }
@@ -1041,6 +1047,7 @@ ierr s_cat_char(String *s, char c, Alloc *a) {
 
     *(char *)(s->l.buf.data + s->l.len * s->l.itemsize) = c;
     s->l.len += 1;
+    s->l.buf.data[s->l.len] = 0;
 
     return e;
 }
