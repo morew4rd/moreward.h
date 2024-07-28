@@ -45,3 +45,7 @@ test-unit:
 test-e2e:
 	@echo "\n================================== MAKE =======\n==> test-e2e\n"
 	_b/test_e2e
+
+pushy:
+	@echo "merge work to main and push to github"
+	git checkout main && git merge work && git push origin main && git checkout work
