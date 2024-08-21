@@ -134,8 +134,8 @@ void reset_stack_allocator(StackAllocator* stack) {
 void custom_allocator_example(void) {
     m_log_info("--- Custom Allocator Example ---");
 
-    // Creating a stack allocator with a buffer of 1024 bytes
-    U8 buffer[1024];
+    // Creating a stack allocator with a buffer of 101 bytes
+    U8 buffer[101];
     StackAllocator stack;
     init_stack_allocator(&stack, buffer, sizeof(buffer));
 
@@ -153,7 +153,7 @@ void custom_allocator_example(void) {
 
     // Creating a StrBuffer using the custom allocator
     m_StrBuffer sb = {0};
-    ms_init(&sb, 100, NULL, NULL);
+    ms_init(&sb, 100, &custom_allocator, NULL); // anything larger would crash the app.
     m_log_info("StrBuffer created using custom allocator");
 
     // Concatenating strings
