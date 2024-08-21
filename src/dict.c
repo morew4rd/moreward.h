@@ -94,3 +94,9 @@ void md_clear(m_Dict* dict, IErr* errptr) {
     ml_clear(&dict->keys, errptr);
     ml_clear(&dict->values, errptr);
 }
+
+I32 md_count(m_Dict* dict, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    return dict->keys.count;
+}

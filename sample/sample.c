@@ -19,7 +19,7 @@ void str_buffer_example(void) {
     m_log_info("Concatenated strings: %s", ms_getstr(&sb, NULL));
 
     // Clearing the StrBuffer
-    ms_clear(&sb, NULL);
+    ms_setcap(&sb, 0, NULL);
     m_log_info("StrBuffer cleared");
 }
 

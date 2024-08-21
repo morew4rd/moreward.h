@@ -137,12 +137,13 @@ void ml_setcap(m_List* list, I32 newcap, IErr* errptr);
 void ml_clear(m_List* list, IErr* errptr);
 void ml_push(m_List* list, void* item, IErr* errptr);
 void* ml_pop(m_List* list, IErr* errptr);
-I32 ml_count(m_List* list, IErr* errptr);
 void* ml_get(m_List* list, I32 index, IErr* errptr);
+void ml_put(m_List* list, I32 index, void* item, IErr* errptr);
 void ml_insert(m_List* list, I32 index, void* item, IErr* errptr);
 void ml_remove(m_List* list, I32 index, IErr* errptr);
 void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr);
 void ml_remove_swap(m_List* list, I32 index, IErr* errptr);
+I32 ml_count(m_List* list, IErr* errptr);
 I32 ml_find(m_List* list, void* item, IErr* errptr);
 void ml_sort(m_List* list, IErr* errptr);
 
@@ -154,6 +155,7 @@ void md_put(m_Dict* dict, void* key, void* value, IErr* errptr);
 Bool md_has(m_Dict* dict, void* key, IErr* errptr);
 void md_remove(m_Dict* dict, void* key, IErr* errptr);
 void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr);
+I32 md_count(m_Dict* dict, IErr* errptr);
 
 void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr);
 void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr);

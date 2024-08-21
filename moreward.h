@@ -310,12 +310,13 @@ void ml_setcap(m_List* list, I32 newcap, IErr* errptr);
 void ml_clear(m_List* list, IErr* errptr);
 void ml_push(m_List* list, void* item, IErr* errptr);
 void* ml_pop(m_List* list, IErr* errptr);
-I32 ml_count(m_List* list, IErr* errptr);
 void* ml_get(m_List* list, I32 index, IErr* errptr);
+void ml_put(m_List* list, I32 index, void* item, IErr* errptr);
 void ml_insert(m_List* list, I32 index, void* item, IErr* errptr);
 void ml_remove(m_List* list, I32 index, IErr* errptr);
 void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr);
 void ml_remove_swap(m_List* list, I32 index, IErr* errptr);
+I32 ml_count(m_List* list, IErr* errptr);
 I32 ml_find(m_List* list, void* item, IErr* errptr);
 void ml_sort(m_List* list, IErr* errptr);
 
@@ -327,6 +328,7 @@ void md_put(m_Dict* dict, void* key, void* value, IErr* errptr);
 Bool md_has(m_Dict* dict, void* key, IErr* errptr);
 void md_remove(m_Dict* dict, void* key, IErr* errptr);
 void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr);
+I32 md_count(m_Dict* dict, IErr* errptr);
 
 void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr);
 void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr);
@@ -578,6 +580,24 @@ void* ml_get(m_List* list, I32 index, IErr* errptr) {
     return list->buffer.data + (index * list->buffer.itemsize);
 }
 
+void ml_put(m_List* list, I32 index, void* item, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (index >= list->count) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        return;
+    }
+
+    if (list->count >= list->buffer.itemcap) {
+        // Double the capacity if the list is full
+        ml_setcap(list, list->buffer.itemcap * 2, errptr);
+        if (errptr && *errptr != 0) return; // Return if error occurred
+    }
+
+    // Copy the new item to the specified index
+    memcpy(list->buffer.data + (index * list->buffer.itemsize), item, list->buffer.itemsize);
+}
+
 void ml_insert(m_List* list, I32 index, void* item, IErr* errptr) {
     if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
@@ -759,6 +779,13 @@ void md_clear(m_Dict* dict, IErr* errptr) {
     ml_clear(&dict->keys, errptr);
     ml_clear(&dict->values, errptr);
 }
+
+I32 md_count(m_Dict* dict, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    return dict->keys.count;
+}
+
 m_StrBuffer* ms_create(I32 itemcap, m_Allocator* allocator, IErr* errptr) {
     m_StrBuffer* strbuffer = (m_StrBuffer*)m_alloc(sizeof(m_StrBuffer));
     if (!strbuffer) {

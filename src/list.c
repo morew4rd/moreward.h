@@ -99,6 +99,24 @@ void* ml_get(m_List* list, I32 index, IErr* errptr) {
     return list->buffer.data + (index * list->buffer.itemsize);
 }
 
+void ml_put(m_List* list, I32 index, void* item, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (index >= list->count) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        return;
+    }
+
+    if (list->count >= list->buffer.itemcap) {
+        // Double the capacity if the list is full
+        ml_setcap(list, list->buffer.itemcap * 2, errptr);
+        if (errptr && *errptr != 0) return; // Return if error occurred
+    }
+
+    // Copy the new item to the specified index
+    memcpy(list->buffer.data + (index * list->buffer.itemsize), item, list->buffer.itemsize);
+}
+
 void ml_insert(m_List* list, I32 index, void* item, IErr* errptr) {
     if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
