@@ -1,51 +1,18 @@
-.PHONY: default reset build test amalgamate clean-tests config-tests build-tests test-unit test-e2e
+default: run
 
-
-### entry: "make" or "make all"
-
-default: build test
-	@echo
-
-all: reset build test
-	@echo
-
-### shortcuts
-
-reset: clean-tests config-tests
-
-build: amalgamate build-tests
-
-test: test-unit test-e2e
-
-
-### dev: actual work
-
-amalgamate:
-	@echo "\n================================== MAKE =======\n==> amalgamate moreward.h\n"
-	./amalgamate.sh
-
-### test: actual work
-
-clean-tests:
-	@echo "\n================================== MAKE =======\n==> clean\n"
+clean:
 	rm -rf _b
 
-config-tests:
-	@echo "\n================================== MAKE =======\n==> config\n"
-	cmake  -DCMAKE_BUILD_TYPE=Debug -S tests -B _b
+config:
+	cmake -DCMAKE_BUILD_TYPE=Debug -S . -B _b
 
-build-tests:
-	@echo "\n================================== MAKE =======\n==> build-tests\n"
+build:
 	cmake --build _b
 
-test-unit:
-	@echo "\n================================== MAKE =======\n==> test-unit\n"
-	_b/test_unit
+amalgamate:
+	./amalgamate.sh
 
-test-e2e:
-	@echo "\n================================== MAKE =======\n==> test-e2e\n"
-	_b/test_e2e
-
-pushy:
-	@echo "merge work to main and push to github"
-	git checkout main && git merge work && git push origin main && git checkout work
+run: amalgamate config build
+	_b/unit_tests
+	_b/e2e_tests
+	_b/sample hi hello whats up

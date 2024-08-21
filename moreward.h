@@ -3,1199 +3,941 @@
 
 /*
 
-License info is at the EOF .
+License (MIT) is at the EOF .
 
-moreward.h
-==========
+## Overview
 
-What?
------
+`moreward.h` is a header file designed to provide a set of common data structures and utility functions for C programming. It includes definitions for various types, memory allocation macros, and structures for lists, dictionaries, and string buffers. The file also provides logging capabilities and custom allocator support.
 
-Reusable single-file header library for C projects. Provides dynamic lists (arrays), maps and strings. Custom allocators can be used with the API.
+## Build
 
-Almost all functions return an additional integer error value that is set to 0 on success.
+From only one `.c` file set `MOREWARD_IMPL` before including the library:
 
-HOW?
-----
-
-From exactly one .c file set `MOREWARD_H_IMPL` before including the library:
 ```c
-#define MOREWARD_H_IMPL
+#define MOREWARD_IMPL
 #include "moreward.h"
 ```
 
-Some default values can be overridden with defines. See the header source for details.
+From other `.c` files, you can include it normally:
 
-Other includes should be just:
 ```c
 #include "moreward.h"
 ```
 
-For some sample usage, see test cases.
+## Types
 
-API
----
+- **Primitive Types**:
+  - `I8`, `I16`, `I32`, `I64`: Signed integers of 8, 16, 32, and 64 bits respectively.
+  - `U8`, `U16`, `U32`, `U64`: Unsigned integers of 8, 16, 32, and 64 bits respectively.
+  - `F32`, `F64`: Floating-point numbers of 32 and 64 bits respectively.
+  - `Bool`: Boolean type.
+  - `Str`, `CStr`: Strings and constant strings.
+  - `USize`, `ISize`: Size types for unsigned and signed sizes.
+  - `IErr`: Integer type for error codes.
 
-- l_create
-    creates a new list
-- l_destroy
-    destroys a list
-- l_init
-    initializes a list
-- l_setcap
-    sets the capacity of a list
-- l_push
-    adds an item to the end of a list
-- l_put
-    puts an item at a specific index in a list
-- l_pop
-    removes and returns the last item from a list
-- l_get
-    gets the item at a specific index in a list
-- l_swap
-    swaps two items in a list
-- l_clear
-    clears all items from a list
-- l_rm_swap
-    removes an item from a list by swapping with the last item
-- l_rm_move
-    removes an item from a list by moving subsequent items to fill the gap
-- l_rm_move_n
-    removes n items from a list starting at a specific index by moving subsequent items to fill the gaps
-- l_insert
-    inserts an item at a specific index in a list
-- l_insert_empty_n
-    inserts n empty items at a specific index in a list
-- l_find
-    finds the index of an item in a list
-- l_len
-    gets the number of items in a list
-- l_cap
-    gets the capacity of a list
-- m_create
-    creates a new map
-- m_destroy
-    destroys a map
-- m_init
-    initializes a map
-- m_setcap
-    sets the capacity of a map
-- m_put
-    puts a key-value pair into a map
-- m_get
-    gets the value associated with a key in a map
-- m_rm
-    removes a key-value pair from a map
-- m_clear
-    clears all key-value pairs from a map
-- m_len
-    gets the number of key-value pairs in a map
-- m_cap
-    gets the capacity of a map
-- s_create
-    creates a new string
-- s_destroy
-    destroys a string
-- s_setcap
-    sets the capacity of a string
-- s_len
-    gets the number of characters in a string
-- s_cap
-    gets the capacity of a string
-- s_clear
-    clears the contents of a string
-- s_get
-    gets the contents of a string
-- s_cat
-    concatenates a const C string to the end of a string
-- s_cat_cstr
-    concatenates a C string to the end of a string
-- s_cat_char
-    concatenates a character to the end of a string
-- s_cat_f32
-    concatenates a float to the end of a string
-- s_cat_f64
-    concatenates a double to the end of a string
-- s_cat_i8
-    concatenates an 8-bit integer to the end of a string
-- s_cat_i16
-    concatenates a 16-bit integer to the end of a string
-- s_cat_i32
-    concatenates a 32-bit integer to the end of a string
-- s_cat_i64
-    concatenates a 64-bit integer to the end of a string
-- s_cat_isize
-    concatenates a size_t to the end of a string
-- s_cat_u8
-    concatenates an 8-bit unsigned integer to the end of a string
-- s_cat_u16
-    concatenates a 16-bit unsigned integer to the end of a string
-- s_cat_u32
-    concatenates a 32-bit unsigned integer to the end of a string
-- s_cat_u64
-    concatenates a 64-bit unsigned integer to the end of a string
-- s_cat_usize
-    concatenates a usize to the end of a string
+- **Structures**:
+  - `m_Allocator`: Defines a custom memory allocator with `malloc`, `realloc`, and `free` functions, along with a `userdata` pointer for context.
+  - `m_Buffer`: Represents a generic buffer with a pointer to data, item size, capacity, and an allocator.
+  - `m_List`: A dynamic array list with a buffer, count of items, and an item comparison function.
+  - `m_Dict`: A dictionary implemented as two lists: one for keys and one for values.
+  - `m_StrBuffer`: A string buffer built on top of `m_Buffer` with a length field.
 
+- **Enumerations**:
+  - `m_LogLevel`: Defines log levels for tracing, information, warnings, errors, and fatal messages.
 
+## Functions
+
+### Logging
+
+- `m_set_loglevel(m_LogLevel level)`: Sets the logging level.
+- `m_log_raw(m_LogLevel level, const char* format, ...)`: Logs a message with a specified level.
+- Macros like `m_log`, `m_log_trace`, `m_log_info`, `m_log_warn`, `m_log_error`, and `m_log_fatal` provide convenient logging with file and line information.
+
+### Memory Management
+
+- `m_set_allocator(m_Allocator *allocator)`: Sets a custom allocator.
+- `m_reset_allocator()`: Resets the allocator to the default.
+- `m_get_allocator()`: Retrieves the current allocator.
+
+#### Custom Allocator
+
+The `m_Allocator` structure allows you to define custom memory allocation functions. This can be useful for tracking memory usage, using a custom memory pool, or integrating with a specific memory management system. To use a custom allocator, define an `m_Allocator` structure with your custom `malloc`, `realloc`, and `free` functions, and then call `m_set_allocator` with a pointer to this structure.
+
+Example:
+
+```c
+m_Allocator custom_allocator = {
+    .malloc = my_malloc,
+    .realloc = my_realloc,
+    .free = my_free,
+    .userdata = NULL
+};
+
+m_set_allocator(&custom_allocator);
+```
+
+### Error Handling
+
+The `IErr` type is used to return error codes from functions. Functions that can potentially fail will take a pointer to an `IErr` variable as an argument. If an error occurs, the function will set the value of this variable to a non-zero error code. You should check the value of this variable after calling such functions to determine if an error occurred.
+
+Example:
+
+```c
+IErr err = 0;
+mb_init(&buffer, itemsize, itemcap, allocator, &err);
+if (err != 0) {
+    // Handle error
+}
+```
+
+### Buffer Management
+
+- `mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr)`: Initializes a buffer.
+- `mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr)`: Sets the capacity of a buffer.
+
+### List Management
+
+- `ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr)`: Initializes a list.
+- `ml_setcap(m_List* list, I32 newcap, IErr* errptr)`: Sets the capacity of a list.
+- `ml_push(m_List* list, void* item, IErr* errptr)`: Adds an item to the list.
+- `void* ml_pop(m_List* list, IErr* errptr)`: Removes and returns the last item from the list.
+- `I32 ml_count(m_List* list, IErr* errptr)`: Returns the number of items in the list.
+- `void* ml_get(m_List* list, I32 index, IErr* errptr)`: Retrieves an item at a specified index.
+- `ml_insert(m_List* list, I32 index, void* item, IErr* errptr)`: Inserts an item at a specified index.
+- `ml_remove(m_List* list, I32 index, IErr* errptr)`: Removes an item at a specified index.
+- `ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr)`: Removes a range of items.
+- `ml_remove_swap(m_List* list, I32 index, IErr* errptr)`: Removes an item by swapping it with the last item.
+- `I32 ml_find(m_List* list, void* item, IErr* errptr)`: Finds the index of an item.
+- `ml_clear(m_List* list, IErr* errptr)`: Clears the list.
+- `ml_sort(m_List* list, IErr* errptr)`: Sorts the list.
+
+### Dictionary Management
+
+- `md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr)`: Initializes a dictionary.
+- `md_setcap(m_Dict* dict, I32 newcap, IErr* errptr)`: Sets the capacity of a dictionary.
+- `void* md_get(m_Dict* dict, void* key, IErr* errptr)`: Retrieves a value by key.
+- `md_put(m_Dict* dict, void* key, void* value, IErr* errptr)`: Adds or updates a key-value pair.
+- `Bool md_has(m_Dict* dict, void* key, IErr* errptr)`: Checks if a key exists.
+- `md_remove(m_Dict* dict, void* key, IErr* errptr)`: Removes a key-value pair.
+- `md_remove_ordered(m_Dict* dict, void* key, IErr* errptr)`: Removes a key-value pair while maintaining order.
+- `md_clear(m_Dict* dict, IErr* errptr)`: Clears the dictionary.
+
+### String Buffer Management
+
+- `ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr)`: Initializes a string buffer.
+- `ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr)`: Sets the capacity of a string buffer.
+- `ms_clear(m_StrBuffer* strbuffer, IErr* errptr)`: Clears the string buffer.
+- `char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr)`: Retrieves the string from the buffer.
+- `ms_cat(m_StrBuffer* strbuffer, const char* format, ...)`: Appends formatted text to the string buffer.
+- `ms_trim(m_StrBuffer* strbuffer, IErr* errptr)`: Trims the string buffer.
+- `ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr)`: Extracts a substring.
+- `I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr)`: Finds the index of a substring.
+
+### Logging System
+
+The logging system in `moreward.h` allows you to log messages at different levels of severity. The available log levels are:
+
+- `M_LOG_TRACE`: Detailed trace messages, typically used for debugging.
+- `M_LOG_INFO`: Informational messages that highlight the progress of the application.
+- `M_LOG_WARN`: Warning messages that indicate potential issues.
+- `M_LOG_ERROR`: Error messages that indicate issues that need attention.
+- `M_LOG_FATAL`: Fatal error messages that indicate critical issues requiring immediate attention.
+
+To set the logging level, use the `m_set_loglevel` function:
+
+```c
+m_set_loglevel(M_LOG_INFO);
+```
+
+To log messages, use the `m_log_raw` function or the convenience macros:
+
+```c
+m_log_info("This is an informational message.");
+m_log_error("This is an error message.");
+```
+
+### Macros
+
+- `m_alloc(n)`: Allocates memory using the current allocator.
+- `m_realloc(p, n)`: Reallocates memory using the current allocator.
+- `m_free(p)`: Frees memory using the current allocator.
+- `m_log(format, ...)`: Logs an informational message.
+- `m_tracelog(level, file, line, format, ...)`: Logs a message with file and line information.
+- `m_log_trace(format, ...)`: Logs a trace message.
+- `m_log_info(format, ...)`: Logs an informational message.
+- `m_log_warn(format, ...)`: Logs a warning message.
+- `m_log_error(format, ...)`: Logs an error message.
+- `m_log_fatal(format, ...)`: Logs a fatal error message.
+- `m_try(expr, errptr)`: Executes an expression and checks for errors.
+- `m_try_ret(expr, errptr, retval)`: Executes an expression, checks for errors, and returns a value if an error occurs.
+
+This guide provides a brief overview of the types, functions, and macros available in `moreward.h`. For detailed usage and implementation, refer to the source code and comments within the file.
 */
 
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
 
 #ifndef M_DISABLE_ASSERTS
 #include <assert.h>
-#define mg_assert(x)     assert(x)
+#define m_assert(x)     assert(x)
 #else
-#define mg_assert(x)
+#define m_assert(x)
 #endif
 
-#ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
-#define M_LIST_DEFAULT_INITIAL_CAPACITY     8
-#endif
+#define nil NULL
 
-#ifndef M_LIST_MIN_EMPTY_SLOTS
-#define M_LIST_MIN_EMPTY_SLOTS              4
-#endif
+typedef void        Void;
+typedef void*       VPtr;
+typedef bool        Bool;
+typedef int8_t      I8;
+typedef int16_t     I16;
+typedef int32_t     I32;
+typedef int64_t     I64;
+typedef uint8_t     U8;
+typedef uint16_t    U16;
+typedef uint32_t    U32;
+typedef uint64_t    U64;
+typedef float       F32;
+typedef double      F64;
+typedef char*       Str;
+typedef const char* CStr;
+typedef size_t      USize;
+typedef ptrdiff_t   ISize;
+typedef int32_t     IErr;
 
-#ifndef M_STRING_NUMERIC_CAT_BUF_SIZE
-#define M_STRING_NUMERIC_CAT_BUF_SIZE       32
-#endif
+#define m_countof(a)                (isize)(sizeof(a) / sizeof(*(a)))
+#define m_max(a, b)                 ((a)>(b) ? (a) : (b))
+#define m_min(a, b)                 ((a)<(b) ? (a) : (b))
 
-#define countof(a)      (isize)(sizeof(a) / sizeof(*(a)))
-#define max(a, b)       ((a)>(b) ? (a) : (b))
-#define min(a, b)       ((a)<(b) ? (a) : (b))
+#define m_alloc(n)                  m_get_allocator()->malloc((n), m_get_allocator()->userdata);
+#define m_realloc(p,n)              m_get_allocator()->realloc((p), (n), m_get_allocator()->userdata);
+#define m_free(p)                   m_get_allocator()->free((p), m_get_allocator()->userdata)
 
-typedef float           f32;
-typedef double          f64;
-typedef signed char     i8;
-typedef unsigned char   u8;
-typedef signed short    i16;
-typedef unsigned short  u16;
-typedef signed int      i32;
-typedef unsigned int    u32;
-typedef signed long     i64;
-typedef unsigned long   u64;
-typedef u8              byte;
-typedef size_t          usize;
-typedef ptrdiff_t       isize;
-typedef u32             uint;
-typedef u64             uptr;
-typedef int             ierr;
-typedef int             ibool;
+#define m_tracelog(level, file, line, format, ...) \
+                                    m_log_raw(level, "[%s:%d] " format, file, line, ##__VA_ARGS__)
+#define m_log(format, ...)          m_log_raw(M_LOG_INFO, format, ##__VA_ARGS__)
+#define m_log_trace(format, ...)    m_tracelog(M_LOG_TRACE, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_info(format, ...)     m_tracelog(M_LOG_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_warn(format, ...)     m_tracelog(M_LOG_WARN, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_error(format, ...)    m_tracelog(M_LOG_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_fatal(format, ...)    m_tracelog(M_LOG_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
+#define m_try(expr, errptr) \
+    do { \
+        expr; \
+        if (errptr && *(errptr) != 0) { \
+            m_log_error("Error in %s: %d", __func__, *(errptr)); \
+            return; \
+        } \
+    } while (0)
 
-#define TRUE    (1)
-#define FALSE   (0)
-#define nil     NULL
+#define m_try_ret(expr, errptr, retval) \
+    do { \
+        expr; \
+        if (errptr && *(errptr) != 0) { \
+            m_log_error("Error in %s: %d", __func__, *(errptr)); \
+            return (retval); \
+        } \
+    } while (0)
 
 enum {
-    ERR_ALLOC_NEG_SIZE              = 10001,
-    ERR_BUFFER_PTR_NIL              = 11001,
-    ERR_LIST_PTR_NIL                = 12001,
-    ERR_LIST_ITEM_PTR_NIL           = 12002,
-    ERR_LIST_ALREADY_INITIALIZED    = 12003,    /* if l_init is called on an initialized list */
-    ERR_LIST_ITEMSIZE_NOT_SET       = 12004,    /* if l_setcap is called on an uninitialized list */
-    ERR_LIST_NEG_ITEMSIZE           = 12005,    /* if l_setcap is called on an uninitialized list */
-    ERR_LIST_ITEM_NOT_FOUND         = 12006,    /* if l_find() can't find the given item. it also returns -1 as index. */
-    ERR_LIST_OUT_OF_BOUNDS          = 12022,    /* if index > len - 1.  l_get  */
-    ERR_MAP_PTR_NIL                 = 13001,
-    ERR_MAP_KEY_VAL_SIZE_NOT_SET    = 13004,
-    ERR_STRING_PTR_NIL              = 14001,
+    M_ERR_NULL_POINTER = -1,
 };
 
-#define CHECK_GET_ALLOCATOR(a)                  if (!(a)) { (a) = default_alloc; }
-#define CHECK_ALLOC_SIZE(size, errptr, ret)     if (size < 0) { if (errptr) { *(errptr) = ERR_ALLOC_NEG_SIZE; } return ret; }
-#define CHECK_BUFFER_PTR(b, errptr, ret)        if (!(b)) { if (errptr) { *(errptr) = ERR_BUFFER_PTR_NIL; } return ret; }
-#define CHECK_LIST_PTR(l, errptr, ret)          if (!(l)) { if (errptr) { *(errptr) = ERR_LIST_PTR_NIL; } return ret; }
-#define CHECK_LIST_ITEM_PTR(x, errptr, ret)     if (!(x)) { if (errptr) { *(errptr) = ERR_LIST_ITEM_PTR_NIL; } return ret; }
-#define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if ((l)->itemsize == 0) { if (errptr) { *(errptr) = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
-#define CHECK_LIST_BOUNDS(l, idx, errptr, ret)  if (idx < 0 || idx > (l)->len - 1) { *(errptr) = ERR_LIST_OUT_OF_BOUNDS; return ret; }
-#define CHECK_MAP_PTR(m, errptr, ret)           if (!(m)) { if (errptr) { *(errptr) = ERR_MAP_PTR_NIL; } return ret; }
-#define CHECK_MAP_KEY_VAL_SIZE(m, errptr, ret)  if ((m)->keys.itemsize == 0 || (m)->values.itemsize == 0) { if (errptr) { *(errptr) = ERR_MAP_KEY_VAL_SIZE_NOT_SET; } return ret; }
-#define CHECK_STRING_PTR(s, errptr, ret)        if (!(s)) { if (errptr) { *(errptr) = ERR_STRING_PTR_NIL; } return ret; }
+typedef struct m_Allocator {
+    void* (*malloc)(size_t size, void* userdata);
+    void* (*realloc)(void* ptr, size_t new_size, void* userdata);
+    void  (*free)(void* ptr, void* userdata);
+    void* userdata;
+} m_Allocator;
 
-#define ZERO_ERRPTR(errptr) if (errptr) { *(errptr) = 0; }
+typedef struct m_Buffer {
+    U8* data;
+    I32 itemsize;
+    I32 itemcap;
+    m_Allocator* allocator;
+} m_Buffer;
 
-typedef struct Alloc {
-    void *udata;
-    void * (*malloc)(isize size, void *udata);
-    void * (*realloc)(void *ptr, isize newsize, void *udata);
-    void (*free)(void *ptr, void *udata);
-} Alloc;
+typedef I32 (*m_ItemComparer)(void* item1, void* item2);
 
-typedef struct Buffer {
-    isize size;  /* in bytes */
-    u8 *data;
-} Buffer;
+typedef struct m_List {
+    m_Buffer buffer;
+    I32 count;
+    m_ItemComparer comparer;
+} m_List;
 
-typedef struct List {
-    isize itemsize;
-    isize len;  /* number of items */
-    isize cap;  /* capacity (value = buffer.size / itemsize) */
-    Buffer buf;
-} List;
+typedef struct m_Dict {
+    m_List keys;
+    m_List values;
+} m_Dict;
 
-typedef struct Map {
-    List keys;
-    List values;
-} Map;
+typedef struct m_StrBuffer {
+    m_Buffer buffer;
+    I32 length;
+} m_StrBuffer;
 
-typedef struct String {
-    List l;
-} String;
+typedef enum m_LogLevel {
+    M_LOG_TRACE,
+    M_LOG_INFO,
+    M_LOG_WARN,
+    M_LOG_ERROR,
+    M_LOG_FATAL
+} m_LogLevel;
 
-extern Alloc *default_alloc;
+void m_set_loglevel(m_LogLevel level);
+void m_log_raw(m_LogLevel level, const char* format, ...);
 
-Alloc *get_default_alloc(void);
+void m_set_allocator(m_Allocator *allocator);
+void m_reset_allocator(void);
+m_Allocator *m_get_allocator(void);
 
-ierr b_setsize(Buffer *b, isize size, Alloc *a);
+m_Buffer* mb_create(I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void mb_destroy(m_Buffer* buffer, IErr* errptr);
+m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void ml_destroy(m_List* list, IErr* errptr);
+m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void md_destroy(m_Dict* dict, IErr* errptr);
+m_StrBuffer* ms_create(I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void ms_destroy(m_StrBuffer* strbuffer, IErr* errptr);
 
-List *l_create(isize itemsize, isize init_cap, Alloc *a, ierr *errptr);
-ierr l_destroy(List *l, Alloc *a);
-ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
-ierr l_setcap(List *l, isize cap, Alloc *a);
-ierr l_push(List *l, void *item, Alloc *a);
-ierr l_put(List *l, void *item, isize index);
-void *l_pop(List *l, ierr *errptr);
-void *l_get(List *l, isize index, ierr *errptr);
-ierr l_swap(List *l, isize i1, isize i2);
-ierr l_clear(List *l) ;
-ierr l_rm_swap(List *l, isize index);
-ierr l_rm_move(List *l, isize index);
-ierr l_rm_move_n(List *l, isize index, isize n);
-ierr l_insert(List *l, isize index, void *item, Alloc *a);
-ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
-isize l_find(List *l, void *item, ierr *errptr);
-isize l_len(List *l, ierr *errptr);
-isize l_cap(List *l, ierr *errptr);
+void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr);
 
-Map *m_create(isize key_size, isize value_size, isize init_cap, Alloc *a, ierr *errptr);
-ierr m_destroy(Map *l, Alloc *a);
-ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a);
-ierr m_setcap(Map *m, isize cap, Alloc *a);
-ierr m_put(Map *m, void *key, void *value, Alloc *a);
-void *m_get(Map *m, void *key, ierr *errptr);
-ierr m_rm(Map *m, void *key, Alloc *a);
-ierr m_clear(Map *m);
-isize m_len(Map *m, ierr *errptr);
-isize m_cap(Map *m, ierr *errptr);
+void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void ml_setcap(m_List* list, I32 newcap, IErr* errptr);
+void ml_clear(m_List* list, IErr* errptr);
+void ml_push(m_List* list, void* item, IErr* errptr);
+void* ml_pop(m_List* list, IErr* errptr);
+I32 ml_count(m_List* list, IErr* errptr);
+void* ml_get(m_List* list, I32 index, IErr* errptr);
+void ml_insert(m_List* list, I32 index, void* item, IErr* errptr);
+void ml_remove(m_List* list, I32 index, IErr* errptr);
+void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr);
+void ml_remove_swap(m_List* list, I32 index, IErr* errptr);
+I32 ml_find(m_List* list, void* item, IErr* errptr);
+void ml_sort(m_List* list, IErr* errptr);
 
-String *s_create(isize init_cap, Alloc *a, ierr *errptr);
-ierr s_destroy(String *s, Alloc *a);
-ierr s_setcap(String *s, isize cap, Alloc *a);
-isize s_len(String *s, ierr *errptr);
-isize s_cap(String *s, ierr *errptr);
-ierr s_clear(String *s);
-char *s_get(String *s, ierr *errptr);
-ierr s_cat(String *s, const char *cstr, Alloc *a);
-ierr s_cat_cstr(String *s, char *cstr, Alloc *a);
-ierr s_cat_char(String *s, char c, Alloc *a);
-ierr s_cat_f32(String *s, f32 f, Alloc *a);
-ierr s_cat_f64(String *s, f64 f, Alloc *a);
-ierr s_cat_i8(String *s, i8 x, Alloc *a);
-ierr s_cat_i16(String *s, i16 x, Alloc *a);
-ierr s_cat_i32(String *s, i32 x, Alloc *a);
-ierr s_cat_i64(String *s, i64 x, Alloc *a);
-ierr s_cat_isize(String *s, isize i, Alloc *a);
-ierr s_cat_u8(String *s, u8 x, Alloc *a);
-ierr s_cat_u16(String *s, u16 x, Alloc *a);
-ierr s_cat_u32(String *s, u32 x, Alloc *a);
-ierr s_cat_u64(String *s, u64 x, Alloc *a);
-ierr s_cat_usize(String *s, usize x, Alloc *a);
+void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void md_setcap(m_Dict* dict, I32 newcap, IErr* errptr);
+void md_clear(m_Dict* dict, IErr* errptr);
+void* md_get(m_Dict* dict, void* key, IErr* errptr);
+void md_put(m_Dict* dict, void* key, void* value, IErr* errptr);
+Bool md_has(m_Dict* dict, void* key, IErr* errptr);
+void md_remove(m_Dict* dict, void* key, IErr* errptr);
+void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr);
 
+void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr);
+void ms_clear(m_StrBuffer* strbuffer, IErr* errptr);
+char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr);
+void ms_cat(m_StrBuffer* strbuffer, const char* format, ...);
+void ms_trim(m_StrBuffer* strbuffer, IErr* errptr);
+void ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr);
+I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr);
 
 
 
 /* IMPLEMENTATION */
 
 
-#ifdef MOREWARD_H_IMPL
+#ifdef MOREWARD_IMPL
 
 
 #include <stdlib.h>
-
-#ifndef M_MALLOC_FN
-#define M_MALLOC_FN    malloc
-#endif
-#ifndef M_REALLOC_FN
-#define M_REALLOC_FN   realloc
-#endif
-#ifndef M_FREE_FN
-#define M_FREE_FN      free
-#endif
-
-static void *_def_malloc(isize size, void *udata) {
-    (void)udata;
-    return M_MALLOC_FN(size);
-}
-
-static void * _def_realloc(void *ptr, isize newsize, void *udata) {
-    (void)udata;
-    return M_REALLOC_FN(ptr, newsize);
-}
-
-static void _def_free(void *ptr, void *udata) {
-    (void)udata;
-    M_FREE_FN(ptr);
-}
-
-static Alloc _def_alloc = {nil, _def_malloc, _def_realloc, _def_free};
-
-
-Alloc *default_alloc = &_def_alloc;
-
-
-Alloc *get_default_alloc(void) {
-    return default_alloc;
-}
-
-
-ierr b_setsize(Buffer *b, isize size, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_BUFFER_PTR(b, &e, e);
-    CHECK_ALLOC_SIZE(size, &e, e);
-
-    if (size == 0) {
-        if (b->size == 0) {
-            /* nothing. buffer already empty */
-            mg_assert(!b->data);   /* data should be nil */
-        } else {
-            /* free buffer */
-            mg_assert(b->data);   /* data should not be nil */
-            a->free(b->data, a->udata);
-            b->data = nil;
-            b->size = 0;
-        }
-    } else if (size == b->size) {
-        /* do nothing */
-        mg_assert(b->data);   /* data should not be nil */
-    } else if (b->size == 0) {
-        /* malloc */
-        mg_assert(!b->data);   /* data should be nil */
-        b->data = a->malloc(size, a->udata);
-        mg_assert(b->data);   /* data should not be nil */
-        b->size = size;
-    } else {
-        /* realloc */
-        mg_assert(b->data);   /* data should not be nil */
-        b->data = a->realloc(b->data, size, a->udata);
-        mg_assert(b->data);   /* data should not be nil */
-        b->size = size;
-    }
-
-    return e;
-}
-#include <string.h>
-
-List *l_create(isize itemsize, isize init_cap, Alloc *a, ierr *errptr) {
-    ierr e = 0;
-    List *l = nil;
-    CHECK_GET_ALLOCATOR(a);
-    l = (List *)a->malloc(sizeof(List), a->udata);
-    if (!l) {
-        if (errptr) { *errptr = ERR_LIST_PTR_NIL; }
-        return nil;
-    }
-    memset(l, 0, sizeof(List));
-    e = l_init(l, itemsize, init_cap, a);
-    if (e != 0) {
-        a->free(l, a->udata);
-        if (errptr) { *errptr = e; }
-        return nil;
-    }
-    if (errptr) { *errptr = e; }
-    return l;
-}
-
-ierr l_destroy(List *l, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(l, &e, e);
-    e = l_setcap(l, 0, a);
-    a->free(l, a->udata);
-    return e;
-}
-
-Map *m_create(isize key_size, isize value_size, isize init_cap, Alloc *a, ierr *errptr) {
-    ierr e = 0;
-    Map *m = nil;
-    CHECK_GET_ALLOCATOR(a);
-    m = (Map *)a->malloc(sizeof(Map), a->udata);
-    if (!m) {
-        if (errptr) { *errptr = ERR_MAP_PTR_NIL; }
-        return nil;
-    }
-    memset(m, 0, sizeof(Map));
-    e = m_init(m, key_size, value_size, init_cap, a);
-    if (e != 0) {
-        a->free(m, a->udata);
-        if (errptr) { *errptr = e; }
-        return nil;
-    }
-    if (errptr) { *errptr = e; }
-    return m;
-}
-
-ierr m_destroy(Map *m, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_MAP_PTR(m, &e, e);
-    e = m_setcap(m, 0, a);;
-    a->free(m, a->udata);
-    return e;
-}
-
-String *s_create(isize init_cap, Alloc *a, ierr *errptr) {
-    ierr e = 0;
-    String *s = nil;
-    CHECK_GET_ALLOCATOR(a);
-    s = (String *)a->malloc(sizeof(String), a->udata);
-    if (!s) {
-        if (errptr) { *errptr = ERR_STRING_PTR_NIL; }
-        return nil;
-    }
-    memset(s, 0, sizeof(String));
-    e = l_init(&s->l, 1, init_cap, a);
-    if (e != 0) {
-        a->free(s, a->udata);
-        if (errptr) { *errptr = e; }
-        return nil;
-    }
-    if (errptr) { *errptr = e; }
-    return s;
-}
-
-ierr s_destroy(String *s, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-    e = s_setcap(s, 0, a);
-    a->free(s, a->udata);
-    return e;
-}
-
-#include <string.h>
-
-/* utility function for setting list capacity. only checks for the allocation size */
-static ierr _l_setcap_nochecks(List *l, isize cap, Alloc *a) {
-    ierr e = 0;
-    isize bufsize = 0;
-
-    bufsize = l->itemsize * cap;
-
-    CHECK_ALLOC_SIZE(bufsize, &e, e);
-
-    e = b_setsize(&l->buf, bufsize, a);
-
-    if (e != 0) {
-        return e;
-    }
-
-    l->cap = cap;
-
-    if (l->len > l->cap) {
-        l->len = l->cap;
-    }
-
-    return e;
-}
-
-static void _l_put_nochecks(List *l, void *item, isize index) {
-    byte *storage = l->buf.data;
-    storage += index * l->itemsize;
-    memcpy(storage, item, l->itemsize);
-}
-
-static ierr _l_check_for_growth_and_grow(List *l, isize extra, Alloc *a) {
-    ierr e = 0;
-    if (l->len  >= l->cap + extra - M_LIST_MIN_EMPTY_SLOTS ) {
-        e = _l_setcap_nochecks(l, l->cap * 2 + M_LIST_MIN_EMPTY_SLOTS,  a);
-        if (e != 0) {
-            return e;
-        }
-    }
-    mg_assert(l->len < l->cap);
-    return e;
-}
-
-ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(l, &e, e);
-
-    if (l->itemsize != 0) {
-        e = ERR_LIST_ALREADY_INITIALIZED; /* already initialized */
-        return e;
-    }
-
-    mg_assert(l->buf.data == nil);
-    mg_assert(l->buf.size == 0);
-
-    if (itemsize <= 0) { itemsize = M_LIST_DEFAULT_INITIAL_CAPACITY; }
-
-    l->itemsize = itemsize;
-
-    e = _l_setcap_nochecks(l, init_cap, a);
-
-    return e;
-}
-
-ierr l_setcap(List *l, isize cap, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(l, &e, e);
-    CHECK_LIST_ITEMSIZE(l, &e, e);
-
-    e = _l_setcap_nochecks(l, cap, a);
-
-    return e;
-}
-
-ierr l_push(List *l, void *item, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(l, &e, e);
-    CHECK_LIST_ITEMSIZE(l, &e, e);
-    CHECK_LIST_ITEM_PTR(item, &e, e);
-    e = _l_check_for_growth_and_grow(l, 0, a);
-    if (e != 0) {
-        return e;
-    }
-    _l_put_nochecks(l, item, l->len);
-
-    l->len += 1;
-    return e;
-}
-
-ierr l_put(List *l, void *item, isize index) {
-    ierr e = 0;
-    CHECK_LIST_PTR(l, &e, e);
-    CHECK_LIST_ITEMSIZE(l, &e, e);
-    CHECK_LIST_ITEM_PTR(item, &e, e);
-    CHECK_LIST_BOUNDS(l, index, &e, e);
-
-    _l_put_nochecks(l, item, index);
-    return e;
-}
-
-void *l_pop(List *l, ierr *errptr) {
-    int e = 0;
-    isize idx = l->len - 1;
-    void *item = l_get(l, idx, &e);
-    if (e == 0) {
-        l->len -= 1;
-    }
-    if (errptr) { *errptr = e; }
-    return item;
-}
-
-void *l_get(List *l, isize index, ierr *errptr) {
-    byte *storage = nil;
-    CHECK_LIST_PTR(l, errptr, nil);
-    CHECK_LIST_BOUNDS(l, index, errptr, nil);
-    ZERO_ERRPTR(errptr);
-    storage = l->buf.data;
-    storage += l->itemsize * index;
-    return storage;
-}
-
-ierr l_swap(List *l, isize i1, isize i2) {
-    ierr e = 0;
-    void *item1 = nil;
-    void *item2 = nil;
-    void *tmp = nil;
-    CHECK_LIST_PTR(l, &e, e);
-    CHECK_LIST_BOUNDS(l, i1, &e, e);
-    CHECK_LIST_BOUNDS(l, i2, &e, e);
-
-    item1 = l_get(l, i1, &e);
-    if (e != 0) { return e; }
-    item2 = l_get(l, i2, &e);
-    if (e != 0) { return e; }
-
-    mg_assert(l->cap > l->len);
-    tmp = l->buf.data + l->len * l->itemsize;
-
-    memcpy(tmp, item1, l->itemsize);
-    memcpy(item1, item2, l->itemsize);
-    memcpy(item2, tmp, l->itemsize);
-
-    return e;
-}
-
-
-ierr l_clear(List *l) {
-    ierr e = 0;
-    CHECK_LIST_PTR(l, &e, e);
-    l->len = 0;
-    return e;
-}
-
-/* remove item. faster, but does not keep the order */
-ierr l_rm_swap(List *l, isize index) {
-    ierr e = 0;
-    void *item = nil;
-    void *last = nil;
-    CHECK_LIST_BOUNDS(l, index, &e, e);
-    if (l->len > 1) {
-        /* if there's only 1 item, then no need to do a swap. otherwise overwrite the item with the last item */
-        item = l->buf.data + index * l->itemsize;
-        last = l->buf.data + (l->len - 1) * l->itemsize;
-        memcpy(item, last, l->itemsize);
-    }
-    l->len -= 1;
-    return e;
-}
-
-ierr l_rm_move(List *l, isize index) {
-    ierr e = 0;
-    CHECK_LIST_PTR(l, &e, e);
-    CHECK_LIST_BOUNDS(l, index, &e, e);
-
-    if (index < l->len - 1) {
-        /* Shift all items after index to the left by one */
-        memmove(
-            l->buf.data + index * l->itemsize,
-            l->buf.data + (index + 1) * l->itemsize,
-            (l->len - index - 1) * l->itemsize
-        );
-    }
-
-    l->len -= 1;
-    return e;
-}
-
-
-ierr l_rm_move_n(List *l, isize index, isize n) {
-    ierr e = 0;
-    CHECK_LIST_PTR(l, &e, e);
-    CHECK_LIST_BOUNDS(l, index, &e, e);
-    if (n <= 0) { return ERR_LIST_OUT_OF_BOUNDS; }
-    CHECK_LIST_BOUNDS(l, index + n - 1, &e, e);
-
-
-    if (index + n >= l->len) {
-        /* Remove from the end */
-        l->len -= n;
-    } else {
-        /* Shift all items after index by n */
-        memmove(
-            l->buf.data + index * l->itemsize,
-            l->buf.data + (index + n) * l->itemsize,
-            (l->len - index - n) * l->itemsize
-        );
-        l->len -= n;
-    }
-
-    return e;
-}
-
-
-
-
-// AI written verify
-ierr l_insert(List *l, isize index, void *item, Alloc *a) {
-     ierr e = 0;
-     CHECK_GET_ALLOCATOR(a);
-     CHECK_LIST_PTR(l, &e, e);
-     CHECK_LIST_ITEM_PTR(item, &e, e);
-
-    if (index == l->len) {
-        return l_push(l, item, a);
-    }
-
-     CHECK_LIST_BOUNDS(l, index, &e, e);
-
-     e = _l_check_for_growth_and_grow(l, 0, a);
-     if (e != 0) {
-         return e;
-     }
-
-     if (index < l->len) {
-         /* Shift all items after index to the right by one */
-         memmove(
-             l->buf.data + (index + 1) * l->itemsize,
-             l->buf.data + index * l->itemsize,
-             (l->len - index) * l->itemsize
-         );
-     }
-
-     _l_put_nochecks(l, item, index);
-     l->len += 1;
-
-     return e;
-}
-
-
-/*  this function inserts n items at index by moving the other items away.
-    newly allocated items are initialized to zero.
-*/
-ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_LIST_PTR(l, &e, e);
-
-    if (index != l->len) {
-        // insert at the end OK
-        CHECK_LIST_BOUNDS(l, index, &e, e);
-    }
-
-    if (n <= 0) { return ERR_LIST_OUT_OF_BOUNDS; }
-
-    e = _l_check_for_growth_and_grow(l, n, a);
-    if (e != 0) {
-        return e;
-    }
-
-    if (index < l->len) {
-        /* Shift all items after index to the right by n */
-        memmove(
-            l->buf.data + (index + n) * l->itemsize,
-            l->buf.data + index * l->itemsize,
-            (l->len - index) * l->itemsize
-        );
-    }
-
-    /* Initialize new items to zero */
-    memset(l->buf.data + index * l->itemsize, 0, n * l->itemsize);
-
-    l->len += n;
-
-    return e;
-}
-
-
-isize l_find(List *l, void *item, ierr *errptr) {
-    isize i;
-    CHECK_LIST_PTR(l, errptr, -1);
-    CHECK_LIST_ITEM_PTR(item, errptr, -1);
-
-    ZERO_ERRPTR(errptr);
-
-    for (i = 0; i < l->len; i++) {
-        void *current_item = l_get(l, i, errptr);
-        if (memcmp(current_item, item, l->itemsize) == 0) {
-            return i;
-        }
-    }
-
-    if (errptr) { *errptr = ERR_LIST_ITEM_NOT_FOUND; }
-    return -1;
-}
-
-isize l_len(List *l, ierr *errptr) {
-    isize len = 0;
-    CHECK_LIST_PTR(l, errptr, -1);
-    len = l->len;
-    return len;
-}
-
-isize l_cap(List *l, ierr *errptr) {
-    isize cap = 0;
-    CHECK_LIST_PTR(l, errptr, -1);
-    cap = l->cap;
-    return cap;
-}
-
-
-#include <string.h>
-
-ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_MAP_PTR(m, &e, e);
-
-    e = l_init(&m->keys, key_size, init_cap, a);
-    if (e != 0) { return e; }
-    e = l_init(&m->values, value_size, init_cap, a);
-    if (e != 0) { return e; }
-
-    return e;
-}
-
-ierr m_setcap(Map *m, isize cap, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_MAP_PTR(m, &e, e);
-    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
-    CHECK_LIST_ITEMSIZE(&m->keys, &e, e);
-    CHECK_LIST_ITEMSIZE(&m->values, &e, e);
-
-    e = l_setcap(&m->keys, cap, a);
-    if (e != 0) { return e; }
-    e = l_setcap(&m->values, cap, a);
-    if (e != 0) { return e; }
-
-    return e;
-}
-
-ierr m_put(Map *m, void *key, void *value, Alloc *a) {
-    ierr e = 0;
-    isize idx = 0;
-    void *key_storage = nil;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_MAP_PTR(m, &e, e);
-    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
-    CHECK_LIST_ITEM_PTR(key, &e, e);
-    CHECK_LIST_ITEM_PTR(value, &e, e);
-
-    idx = l_find(&m->keys, key, &e);
-    if (e == 0) {
-        /* update */
-        key_storage = l_get(&m->keys, idx, &e);
-        if (e == 0) {
-            memcpy(key_storage, key, m->keys.itemsize);
-            key_storage = l_get(&m->values, idx, &e);
-            if (e == 0) {
-                memcpy(key_storage, value, m->values.itemsize);
-            }
-            mg_assert(m->keys.len == m->values.len);
-        }
-    } else {
-        /* insert */
-        e = l_push(&m->keys, key, a);
-        if (e == 0) {
-            e = l_push(&m->values, value, a);
-        }
-        mg_assert(m->keys.len == m->values.len);
-    }
-
-    return e;
-}
-
-void *m_get(Map *m, void *key, ierr *errptr) {
-    isize idx = 0;
-    void *value = nil;
-    ierr e = 0;
-    CHECK_MAP_PTR(m, errptr, nil);
-    CHECK_MAP_KEY_VAL_SIZE(m, errptr, nil);
-    CHECK_LIST_ITEM_PTR(key, errptr, nil);
-
-    idx = l_find(&m->keys, key, &e);
-    if (e == 0) {
-        value = l_get(&m->values, idx, errptr);
-    } else {
-        if (errptr) { *errptr = e; }
-    }
-
-    return value;
-}
-
-ierr m_rm(Map *m, void *key, Alloc *a) {
-    ierr e = 0;
-    isize idx = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_MAP_PTR(m, &e, e);
-    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
-    CHECK_LIST_ITEM_PTR(key, &e, e);
-
-    idx = l_find(&m->keys, key, &e);
-    if (e == 0) {
-        e = l_rm_move(&m->keys, idx);
-        if (e == 0) {
-            e = l_rm_move(&m->values, idx);
-        }
-        mg_assert(m->keys.len == m->values.len);
-    }
-
-    return e;
-}
-
-ierr m_clear(Map *m) {
-    ierr e = 0;
-    CHECK_MAP_PTR(m, &e, e);
-    CHECK_MAP_KEY_VAL_SIZE(m, &e, e);
-
-    e = l_clear(&m->keys);
-    if (e == 0) {
-        e = l_clear(&m->values);
-    }
-    mg_assert(m->keys.len == m->values.len);
-    return e;
-}
-
-
-isize m_len(Map *m, ierr *errptr) {
-    isize len = 0;
-    CHECK_MAP_PTR(m, errptr, -1);
-    len = m->keys.len;
-    return len;
-}
-
-isize m_cap(Map *m, ierr *errptr) {
-    isize cap = 0;
-    CHECK_MAP_PTR(m, errptr, -1);
-    cap = m->keys.cap;
-    return cap;
-}
-
-
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h> // For isspace
 
 
-ierr s_setcap(String *s, isize cap, Alloc *a) {
-    ierr e = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-    s->l.itemsize = 1;
-    e = l_setcap(&s->l, cap, a);
-    if (s->l.cap > 0) {
-        if (s->l.len >= s->l.cap) {
-            s->l.len = s->l.cap - 1;
+// Default malloc function
+static void* _default_malloc(size_t size, void* userdata) {
+    return malloc(size);
+}
+
+// Default realloc function
+static void* _default_realloc(void* ptr, size_t new_size, void* userdata) {
+    return realloc(ptr, new_size);
+}
+
+// Default free function
+static void _default_free(void* ptr, void* userdata) {
+    free(ptr);
+}
+
+// Define the default allocator
+static m_Allocator _default_allocator = {
+    .malloc = _default_malloc,
+    .realloc = _default_realloc,
+    .free = _default_free,
+    .userdata = NULL
+};
+
+static m_Allocator *_current_allocator = &_default_allocator;
+
+void m_set_allocator(m_Allocator *allocator) {
+    _current_allocator = allocator;
+}
+
+void m_reset_allocator(void) {
+    _current_allocator = &_default_allocator;
+}
+
+m_Allocator *m_get_allocator() {
+    return _current_allocator;
+}
+
+
+static void _buffer_free_data(m_Buffer* buffer) {
+    if (buffer->data) {
+        buffer->allocator->free(buffer->data, buffer->allocator->userdata);
+        buffer->data = NULL;
+        buffer->itemcap = 0;
+    }
+}
+
+m_Buffer* mb_create(I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr) {
+    m_Buffer* buffer = (m_Buffer*)m_alloc(sizeof(m_Buffer));
+    if (!buffer) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return nil;
+    }
+    mb_init(buffer, itemsize, itemcap, allocator, errptr);
+    if (errptr && *errptr != 0) {
+        m_free(buffer);
+        return nil;
+    }
+    return buffer;
+}
+
+void mb_destroy(m_Buffer* buffer, IErr* errptr) {
+    if (!buffer) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return;
+    }
+    mb_setcap(buffer, 0, errptr);
+    m_free(buffer);
+}
+
+
+void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (allocator) {
+        buffer->allocator = allocator;
+    } else {
+        buffer->allocator = NULL;
+    }
+    buffer->data = NULL;
+    buffer->itemsize = itemsize;
+    buffer->itemcap = 0;
+    mb_setcap(buffer, itemcap, errptr);
+}
+
+void mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (!buffer->allocator) {
+        buffer->allocator = m_get_allocator();
+    }
+
+    if (newcap == 0) {
+        _buffer_free_data(buffer);
+        return;
+    }
+
+    if (buffer->itemsize == 0) {
+        buffer->itemsize = 1;  // 1 byte is assumed. mainly for string buffers without init
+    }
+
+    I32 new_size = buffer->itemsize * newcap;
+    I32 old_size = buffer->itemsize * buffer->itemcap;
+
+    if (buffer->data) {
+        U8* new_data = (U8*)buffer->allocator->realloc(buffer->data, new_size, buffer->allocator->userdata);
+        if (new_data) {
+            buffer->data = new_data;
+            buffer->itemcap = newcap;
+
+            // Zero out the new area if the buffer is expanded
+            if (new_size > old_size) {
+                memset(buffer->data + old_size, 0, new_size - old_size);
+            }
+        } else {
+            if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: realloc failed
         }
-        memset(s->l.buf.data + s->l.len, 0, s->l.cap - s->l.len); // ensure zeros at the end "\0"
+    } else {
+        buffer->data = (U8*)buffer->allocator->malloc(new_size, buffer->allocator->userdata);
+        if (buffer->data) {
+            buffer->itemcap = newcap;
+
+            // Zero out the entire newly allocated buffer
+            memset(buffer->data, 0, new_size);
+        } else {
+            if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: malloc failed
+        }
     }
-    return e;
 }
-
-static ierr _check_len_add_cap(String *s, isize newlen, Alloc *a) {
-    ierr e = 0;
-    if (s->l.cap < newlen + 1) {
-        e = s_setcap(s, newlen, a);
-        if (e) { return e; }
-        s->l.buf.data[newlen] = 0;
-
+m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
+    m_List* list = (m_List*)m_alloc(sizeof(m_List));
+    if (!list) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return nil;
     }
-    return 0;
+    ml_init(list, itemsize, itemcap, comparer, allocator, errptr);
+    if (errptr && *errptr != 0) {
+        m_free(list);
+        return nil;
+    }
+    return list;
 }
 
-isize s_len(String *s, ierr *errptr) {
-    CHECK_STRING_PTR(s, errptr, -1);
-    return s->l.len;
+void ml_destroy(m_List* list, IErr* errptr) {
+    if (!list) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return;
+    }
+    ml_clear(list, errptr);
+    mb_setcap(&list->buffer, 0, errptr);
+    m_free(list);
 }
 
-isize s_cap(String *s, ierr *errptr) {
-    CHECK_STRING_PTR(s, errptr, -1);
-    return s->l.cap;
+static I32 _default_comparer(void* item1, void* item2) {
+    if (item1 == item2) {
+        return 0;
+    } else if (item1 < item2) {
+        return -1;
+    } else {
+        return 1;
+    }
 }
 
-ierr s_clear(String *s) {
-    ierr e = l_clear(&s->l);
-    CHECK_STRING_PTR(s, &e, e);
-    *(char *)(s->l.buf.data + s->l.len * s->l.itemsize) = '\0';
-    return e;
+// TODO: this won't work
+static I32 _int_comparer(void* item1, void* item2) {
+    if (*(int*)item1 == *(int*)item2) {
+        return 0;
+    } else if (*(int*)item1 < *(int*)item2) {
+        return -1;
+    } else {
+        return 1;
+    }
 }
 
-char *s_get(String *s, ierr *errptr) {
-    CHECK_STRING_PTR(s, errptr, nil);
-    return (char *)s->l.buf.data;
+void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    mb_init(&list->buffer, itemsize, itemcap, allocator, errptr);
+    list->count = 0;
+    list->comparer = comparer ? comparer : _int_comparer; // TODO: not int! Use default comparer if none is provided
 }
 
-ierr s_cat(String *s, const char *cstr, Alloc *a) {
-    ierr e = 0;
-    isize cstr_len = 0;
-    isize new_len = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-    CHECK_STRING_PTR(cstr, &e, e);
+void ml_setcap(m_List* list, I32 newcap, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
-    cstr_len = strlen(cstr);
-    // TODO: MAX check?
-    new_len = s->l.len + cstr_len;
+    mb_setcap(&list->buffer, newcap, errptr);
+}
 
-    e = _check_len_add_cap(s, new_len, a);
-    if (e != 0) {
-        return e;
+void ml_push(m_List* list, void* item, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (list->count >= list->buffer.itemcap) {
+        // Double the capacity if the list is full
+        ml_setcap(list, list->buffer.itemcap * 2, errptr);
+        if (errptr && *errptr != 0) return; // Return if error occurred
+    }
+    memcpy(list->buffer.data + (list->count * list->buffer.itemsize), item, list->buffer.itemsize);
+    list->count++;
+}
+
+void* ml_pop(m_List* list, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (list->count == 0) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: list is empty
+        return NULL;
+    }
+    list->count--;
+    return list->buffer.data + (list->count * list->buffer.itemsize);
+}
+
+I32 ml_count(m_List* list, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    return list->count;
+}
+
+void* ml_get(m_List* list, I32 index, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (index >= list->count) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        return NULL;
+    }
+    return list->buffer.data + (index * list->buffer.itemsize);
+}
+
+void ml_insert(m_List* list, I32 index, void* item, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (index > list->count) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        return;
+    }
+    if (list->count >= list->buffer.itemcap) {
+        // Double the capacity if the list is full
+        ml_setcap(list, list->buffer.itemcap * 2, errptr);
+        if (errptr && *errptr != 0) return; // Return if error occurred
+    }
+    // Move elements to the right to make space for the new item
+    memmove(list->buffer.data + ((index + 1) * list->buffer.itemsize), list->buffer.data + (index * list->buffer.itemsize), (list->count - index) * list->buffer.itemsize);
+    memcpy(list->buffer.data + (index * list->buffer.itemsize), item, list->buffer.itemsize);
+    list->count++;
+}
+
+void ml_remove(m_List* list, I32 index, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (index >= list->count) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        return;
+    }
+    // Move elements to the left to overwrite the removed item
+    memmove(list->buffer.data + (index * list->buffer.itemsize), list->buffer.data + ((index + 1) * list->buffer.itemsize), (list->count - index - 1) * list->buffer.itemsize);
+    list->count--;
+}
+
+void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (startindex >= list->count || count == 0) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: invalid range
+        return;
+    }
+    I32 endindex = startindex + count;
+    if (endindex > list->count) {
+        endindex = list->count;
+    }
+    // Move elements to the left to overwrite the removed range
+    memmove(list->buffer.data + (startindex * list->buffer.itemsize), list->buffer.data + (endindex * list->buffer.itemsize), (list->count - endindex) * list->buffer.itemsize);
+    list->count -= (endindex - startindex);
+}
+
+void ml_remove_swap(m_List* list, I32 index, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (index >= list->count) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        return;
+    }
+    // Swap the item at index with the last item
+    memcpy(list->buffer.data + (index * list->buffer.itemsize), list->buffer.data + ((list->count - 1) * list->buffer.itemsize), list->buffer.itemsize);
+    list->count--;
+}
+
+I32 ml_find(m_List* list, void* item, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    if (list == NULL || item == NULL || list->comparer == NULL) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: invalid parameters
+        return -1; // Return -1 if any parameter is NULL
     }
 
-    memcpy(s->l.buf.data + s->l.len * s->l.itemsize, cstr, cstr_len);
-    s->l.len += cstr_len;
-    s->l.buf.data[s->l.len] = 0;
-
-    return e;
-}
-
-ierr s_cat_cstr(String *s, char *cstr, Alloc *a) {
-    ierr e = 0;
-    isize cstr_len = 0;
-    isize new_len = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-    CHECK_STRING_PTR(cstr, &e, e);
-
-    cstr_len = strlen(cstr);
-    // TODO: MAX check?
-    new_len = s->l.len + cstr_len;
-
-    e = _check_len_add_cap(s, new_len, a);
-    if (e != 0) {
-        return e;
+    for (I32 i = 0; i < list->count; ++i) {
+        void* list_item = list->buffer.data + (i * list->buffer.itemsize);
+        if (list->comparer(list_item, item) == 0) {
+            return i; // Return the index of the matching item
+        }
     }
 
-    memcpy(s->l.buf.data + s->l.len * s->l.itemsize, cstr, cstr_len);
-    s->l.len += cstr_len;
-    s->l.buf.data[s->l.len] = 0;
-
-    return e;
+    return -1; // Return -1 if no item matches
 }
 
-ierr s_cat_char(String *s, char c, Alloc *a) {
-    ierr e = 0;
-    isize new_len = 0;
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
+void ml_clear(m_List* list, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
-    new_len = s->l.len + 1;
+    list->count = 0;
+}
 
-    e = _check_len_add_cap(s, new_len, a);
-    if (e != 0) {
-        return e;
+void ml_sort(m_List* list, IErr *errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    qsort(list->buffer.data, list->count, list->buffer.itemsize, (int (*)(const void*, const void*))list->comparer);
+}
+
+m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
+    m_Dict* dict = (m_Dict*)m_alloc(sizeof(m_Dict));
+    if (!dict) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return nil;
+    }
+    md_init(dict, keysize, valuesize, itemcap, comparer, allocator, errptr);
+    if (errptr && *errptr != 0) {
+        m_free(dict);
+        return nil;
+    }
+    return dict;
+}
+
+void md_destroy(m_Dict* dict, IErr* errptr) {
+    if (!dict) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return;
+    }
+    md_clear(dict, errptr);
+    ml_setcap(&dict->keys, 0, errptr);
+    ml_setcap(&dict->values, 0, errptr);
+    m_free(dict);
+}
+
+void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    ml_init(&dict->keys, keysize, itemcap, comparer, allocator, errptr);
+    ml_init(&dict->values, valuesize, itemcap, comparer, allocator, errptr);
+}
+
+void md_setcap(m_Dict* dict, I32 newcap, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    ml_setcap(&dict->keys, newcap, errptr);
+    ml_setcap(&dict->values, newcap, errptr);
+}
+
+void* md_get(m_Dict* dict, void* key, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    I32 index = ml_find(&dict->keys, key, errptr);
+    if (index >= 0) {
+        return ml_get(&dict->values, index, errptr);
+    }
+    return NULL;
+}
+
+void md_put(m_Dict* dict, void* key, void* value, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    I32 index = ml_find(&dict->keys, key, errptr);
+    if (index >= 0) {
+        memcpy(ml_get(&dict->values, index, errptr), value, dict->values.buffer.itemsize);
+    } else {
+        ml_push(&dict->keys, key, errptr);
+        ml_push(&dict->values, value, errptr);
+    }
+}
+
+Bool md_has(m_Dict* dict, void* key, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    return ml_find(&dict->keys, key, errptr) >= 0;
+}
+
+void md_remove(m_Dict* dict, void* key, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    I32 index = ml_find(&dict->keys, key, errptr);
+    if (index >= 0) {
+        ml_remove_swap(&dict->keys, index, errptr);
+        ml_remove_swap(&dict->values, index, errptr);
+    }
+}
+
+void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    I32 index = ml_find(&dict->keys, key, errptr);
+    if (index >= 0) {
+        ml_remove(&dict->keys, index, errptr);
+        ml_remove(&dict->values, index, errptr);
+    }
+}
+
+void md_clear(m_Dict* dict, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    ml_clear(&dict->keys, errptr);
+    ml_clear(&dict->values, errptr);
+}
+m_StrBuffer* ms_create(I32 itemcap, m_Allocator* allocator, IErr* errptr) {
+    m_StrBuffer* strbuffer = (m_StrBuffer*)m_alloc(sizeof(m_StrBuffer));
+    if (!strbuffer) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return nil;
+    }
+    ms_init(strbuffer, itemcap, allocator, errptr);
+    if (errptr && *errptr != 0) {
+        m_free(strbuffer);
+        return nil;
+    }
+    return strbuffer;
+}
+
+void ms_destroy(m_StrBuffer* strbuffer, IErr* errptr) {
+    if (!strbuffer) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER;
+        return;
+    }
+    ms_clear(strbuffer, errptr);
+    mb_setcap(&strbuffer->buffer, 0, errptr);
+    m_free(strbuffer);
+}
+
+void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    mb_init(&strbuffer->buffer, sizeof(char), itemcap + 1, allocator, errptr); // +1 for the null terminator
+    if (errptr && *errptr != 0) return; // Return if error occurred
+
+    strbuffer->length = 0;
+    strbuffer->buffer.data[0] = '\0'; // Ensure the buffer is null-terminated
+}
+
+void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    mb_setcap(&strbuffer->buffer, newcap + 1, errptr); // +1 for the null terminator
+    if (errptr && *errptr != 0) return; // Return if error occurred
+
+    if (strbuffer->length > newcap) {
+        strbuffer->length = newcap;
+    }
+    strbuffer->buffer.data[strbuffer->length] = '\0'; // Ensure the buffer is null-terminated
+}
+
+void ms_clear(m_StrBuffer* strbuffer, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    strbuffer->length = 0;
+    strbuffer->buffer.data[0] = '\0'; // Ensure the buffer is null-terminated
+}
+
+char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+
+    return (char*)strbuffer->buffer.data;
+}
+
+void ms_cat(m_StrBuffer* strbuffer, const char* format, ...) {
+    IErr e = 0;
+    va_list args;
+    va_start(args, format);
+
+    // Calculate the length of the new string
+    va_list args_copy;
+    va_copy(args_copy, args);
+    I32 length = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
+
+    // Ensure there's enough space in the buffer
+    I32 newlength = strbuffer->length + length;
+    if (newlength >= strbuffer->buffer.itemcap - 1) {
+        ms_setcap(strbuffer, newlength + 1, &e);
     }
 
-    *(char *)(s->l.buf.data + s->l.len * s->l.itemsize) = c;
-    s->l.len += 1;
-    s->l.buf.data[s->l.len] = 0;
+    // Append the new string
+    vsprintf((char*)strbuffer->buffer.data + strbuffer->length, format, args);
+    strbuffer->length = newlength;
+    strbuffer->buffer.data[strbuffer->length] = '\0'; // Ensure the buffer is null-terminated
 
-    return e;
+    va_end(args);
 }
 
-ierr s_cat_f32(String *s, f32 f, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%f", f);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
 
-    e = s_cat_cstr(s, buffer, a);
+void ms_trim(m_StrBuffer* strbuffer, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
-    return e;
+    if (strbuffer->length == 0) return; // Nothing to trim
+
+    // Trim leading whitespace
+    U8* start = strbuffer->buffer.data;
+    while (isspace(*start)) start++;
+
+    // Trim trailing whitespace
+    U8* end = strbuffer->buffer.data + strbuffer->length - 1;
+    while (end > start && isspace(*end)) end--;
+
+    // Calculate new length
+    strbuffer->length = end - start + 1;
+    memmove(strbuffer->buffer.data, start, strbuffer->length);
+    strbuffer->buffer.data[strbuffer->length] = '\0'; // Ensure null-termination
 }
 
-ierr s_cat_f64(String *s, f64 f, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%lf", f);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
+void ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
-    e = s_cat_cstr(s, buffer, a);
+    if (start < 0 || start >= strbuffer->length || length <= 0) {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Invalid start or length
+        return;
+    }
 
-    return e;
+    I32 actual_length = length;
+    if (start + length > strbuffer->length) {
+        actual_length = strbuffer->length - start;
+    }
+
+    ms_init(dest, actual_length, strbuffer->buffer.allocator, errptr);
+    if (errptr && *errptr != 0) return; // Return if error occurred
+
+    strncpy((char*)dest->buffer.data, (char*)strbuffer->buffer.data + start, actual_length);
+    dest->length = actual_length;
+    dest->buffer.data[dest->length] = '\0'; // Ensure null-termination
 }
 
-ierr s_cat_i8(String *s, i8 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%d", (int)x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
+I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr) {
+    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
-    e = s_cat_cstr(s, buffer, a);
+    if (strbuffer->length == 0 || !substring || *substring == '\0') {
+        if (errptr) *errptr = M_ERR_NULL_POINTER; // Invalid input
+        return -1;
+    }
 
-    return e;
+    char* found = strstr((char*)strbuffer->buffer.data, substring);
+    if (found) {
+        return found - (char*)strbuffer->buffer.data;
+    } else {
+        return -1;
+    }
 }
 
-ierr s_cat_i16(String *s, i16 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%d", (int)x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
+static m_LogLevel current_log_level = M_LOG_INFO;
 
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
+void m_set_loglevel(m_LogLevel level) {
+    current_log_level = level;
 }
 
-ierr s_cat_i32(String *s, i32 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%d", x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
+void m_log_raw(m_LogLevel level, const char* format, ...) {
+    if (level < current_log_level) {
+        return;
+    }
 
-    e = s_cat_cstr(s, buffer, a);
+    va_list args;
+    va_start(args, format);
 
-    return e;
+    switch (level) {
+        case M_LOG_TRACE:
+            fprintf(stdout, "[TRACE] ");
+            break;
+        case M_LOG_INFO:
+            fprintf(stdout, "[INFO] ");
+            break;
+        case M_LOG_WARN:
+            fprintf(stdout, "[WARN] ");
+            break;
+        case M_LOG_ERROR:
+            fprintf(stdout, "[ERROR] ");
+            break;
+        case M_LOG_FATAL:
+            fprintf(stdout, "[FATAL] ");
+            break;
+    }
+
+    vfprintf(stdout, format, args);
+    fprintf(stdout, "\n");
+    va_end(args);
 }
 
-ierr s_cat_i64(String *s, i64 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%ld", x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-
-ierr s_cat_isize(String *s, isize i, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%ld", i);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-
-ierr s_cat_u8(String *s, u8 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%u", (unsigned int)x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-
-ierr s_cat_u16(String *s, u16 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%u", (unsigned int)x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-
-ierr s_cat_u32(String *s, u32 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%u", x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-
-ierr s_cat_u64(String *s, u64 x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%lu", x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-
-ierr s_cat_usize(String *s, usize x, Alloc *a) {
-    ierr e = 0;
-    char buffer [M_STRING_NUMERIC_CAT_BUF_SIZE];
-    int len; (void)len; len = sprintf(buffer, "%zu", x);
-    CHECK_GET_ALLOCATOR(a);
-    CHECK_STRING_PTR(s, &e, e);
-
-    e = s_cat_cstr(s, buffer, a);
-
-    return e;
-}
-#endif /* MOREWARD_H_IMPL */
+#endif /* MOREWARD_IMPL */
 
 /*
 

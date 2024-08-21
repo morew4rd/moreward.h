@@ -1,169 +1,167 @@
-#ifndef _M_H_INCLUDED_
-#define _M_H_INCLUDED_
+#ifndef  _M_H_
+#define  _M_H_
 /* this is dev/test time header. in the final "amalgamated" version (moreward.h), this is on the top of the file. */
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
 
 #ifndef M_DISABLE_ASSERTS
 #include <assert.h>
-#define mg_assert(x)     assert(x)
+#define m_assert(x)     assert(x)
 #else
-#define mg_assert(x)
+#define m_assert(x)
 #endif
 
-#ifndef M_LIST_DEFAULT_INITIAL_CAPACITY
-#define M_LIST_DEFAULT_INITIAL_CAPACITY     8
-#endif
+#define nil NULL
 
-#ifndef M_LIST_MIN_EMPTY_SLOTS
-#define M_LIST_MIN_EMPTY_SLOTS              4
-#endif
+typedef void        Void;
+typedef void*       VPtr;
+typedef bool        Bool;
+typedef int8_t      I8;
+typedef int16_t     I16;
+typedef int32_t     I32;
+typedef int64_t     I64;
+typedef uint8_t     U8;
+typedef uint16_t    U16;
+typedef uint32_t    U32;
+typedef uint64_t    U64;
+typedef float       F32;
+typedef double      F64;
+typedef char*       Str;
+typedef const char* CStr;
+typedef size_t      USize;
+typedef ptrdiff_t   ISize;
+typedef int32_t     IErr;
 
-#ifndef M_STRING_NUMERIC_CAT_BUF_SIZE
-#define M_STRING_NUMERIC_CAT_BUF_SIZE       32
-#endif
+#define m_countof(a)                (isize)(sizeof(a) / sizeof(*(a)))
+#define m_max(a, b)                 ((a)>(b) ? (a) : (b))
+#define m_min(a, b)                 ((a)<(b) ? (a) : (b))
 
-#define countof(a)      (isize)(sizeof(a) / sizeof(*(a)))
-#define max(a, b)       ((a)>(b) ? (a) : (b))
-#define min(a, b)       ((a)<(b) ? (a) : (b))
+#define m_alloc(n)                  m_get_allocator()->malloc((n), m_get_allocator()->userdata);
+#define m_realloc(p,n)              m_get_allocator()->realloc((p), (n), m_get_allocator()->userdata);
+#define m_free(p)                   m_get_allocator()->free((p), m_get_allocator()->userdata)
 
-typedef float           f32;
-typedef double          f64;
-typedef signed char     i8;
-typedef unsigned char   u8;
-typedef signed short    i16;
-typedef unsigned short  u16;
-typedef signed int      i32;
-typedef unsigned int    u32;
-typedef signed long     i64;
-typedef unsigned long   u64;
-typedef u8              byte;
-typedef size_t          usize;
-typedef ptrdiff_t       isize;
-typedef u32             uint;
-typedef u64             uptr;
-typedef int             ierr;
-typedef int             ibool;
+#define m_tracelog(level, file, line, format, ...) \
+                                    m_log_raw(level, "[%s:%d] " format, file, line, ##__VA_ARGS__)
+#define m_log(format, ...)          m_log_raw(M_LOG_INFO, format, ##__VA_ARGS__)
+#define m_log_trace(format, ...)    m_tracelog(M_LOG_TRACE, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_info(format, ...)     m_tracelog(M_LOG_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_warn(format, ...)     m_tracelog(M_LOG_WARN, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_error(format, ...)    m_tracelog(M_LOG_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
+#define m_log_fatal(format, ...)    m_tracelog(M_LOG_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
+#define m_try(expr, errptr) \
+    do { \
+        expr; \
+        if (errptr && *(errptr) != 0) { \
+            m_log_error("Error in %s: %d", __func__, *(errptr)); \
+            return; \
+        } \
+    } while (0)
 
-#define TRUE    (1)
-#define FALSE   (0)
-#define nil     NULL
+#define m_try_ret(expr, errptr, retval) \
+    do { \
+        expr; \
+        if (errptr && *(errptr) != 0) { \
+            m_log_error("Error in %s: %d", __func__, *(errptr)); \
+            return (retval); \
+        } \
+    } while (0)
 
 enum {
-    ERR_ALLOC_NEG_SIZE              = 10001,
-    ERR_BUFFER_PTR_NIL              = 11001,
-    ERR_LIST_PTR_NIL                = 12001,
-    ERR_LIST_ITEM_PTR_NIL           = 12002,
-    ERR_LIST_ALREADY_INITIALIZED    = 12003,    /* if l_init is called on an initialized list */
-    ERR_LIST_ITEMSIZE_NOT_SET       = 12004,    /* if l_setcap is called on an uninitialized list */
-    ERR_LIST_NEG_ITEMSIZE           = 12005,    /* if l_setcap is called on an uninitialized list */
-    ERR_LIST_ITEM_NOT_FOUND         = 12006,    /* if l_find() can't find the given item. it also returns -1 as index. */
-    ERR_LIST_OUT_OF_BOUNDS          = 12022,    /* if index > len - 1.  l_get  */
-    ERR_MAP_PTR_NIL                 = 13001,
-    ERR_MAP_KEY_VAL_SIZE_NOT_SET    = 13004,
-    ERR_STRING_PTR_NIL              = 14001,
+    M_ERR_NULL_POINTER = -1,
 };
 
-#define CHECK_GET_ALLOCATOR(a)                  if (!(a)) { (a) = default_alloc; }
-#define CHECK_ALLOC_SIZE(size, errptr, ret)     if (size < 0) { if (errptr) { *(errptr) = ERR_ALLOC_NEG_SIZE; } return ret; }
-#define CHECK_BUFFER_PTR(b, errptr, ret)        if (!(b)) { if (errptr) { *(errptr) = ERR_BUFFER_PTR_NIL; } return ret; }
-#define CHECK_LIST_PTR(l, errptr, ret)          if (!(l)) { if (errptr) { *(errptr) = ERR_LIST_PTR_NIL; } return ret; }
-#define CHECK_LIST_ITEM_PTR(x, errptr, ret)     if (!(x)) { if (errptr) { *(errptr) = ERR_LIST_ITEM_PTR_NIL; } return ret; }
-#define CHECK_LIST_ITEMSIZE(l, errptr, ret)     if ((l)->itemsize == 0) { if (errptr) { *(errptr) = ERR_LIST_ITEMSIZE_NOT_SET; } return ret; }
-#define CHECK_LIST_BOUNDS(l, idx, errptr, ret)  if (idx < 0 || idx > (l)->len - 1) { *(errptr) = ERR_LIST_OUT_OF_BOUNDS; return ret; }
-#define CHECK_MAP_PTR(m, errptr, ret)           if (!(m)) { if (errptr) { *(errptr) = ERR_MAP_PTR_NIL; } return ret; }
-#define CHECK_MAP_KEY_VAL_SIZE(m, errptr, ret)  if ((m)->keys.itemsize == 0 || (m)->values.itemsize == 0) { if (errptr) { *(errptr) = ERR_MAP_KEY_VAL_SIZE_NOT_SET; } return ret; }
-#define CHECK_STRING_PTR(s, errptr, ret)        if (!(s)) { if (errptr) { *(errptr) = ERR_STRING_PTR_NIL; } return ret; }
+typedef struct m_Allocator {
+    void* (*malloc)(size_t size, void* userdata);
+    void* (*realloc)(void* ptr, size_t new_size, void* userdata);
+    void  (*free)(void* ptr, void* userdata);
+    void* userdata;
+} m_Allocator;
 
-#define ZERO_ERRPTR(errptr) if (errptr) { *(errptr) = 0; }
+typedef struct m_Buffer {
+    U8* data;
+    I32 itemsize;
+    I32 itemcap;
+    m_Allocator* allocator;
+} m_Buffer;
 
-typedef struct Alloc {
-    void *udata;
-    void * (*malloc)(isize size, void *udata);
-    void * (*realloc)(void *ptr, isize newsize, void *udata);
-    void (*free)(void *ptr, void *udata);
-} Alloc;
+typedef I32 (*m_ItemComparer)(void* item1, void* item2);
 
-typedef struct Buffer {
-    isize size;  /* in bytes */
-    u8 *data;
-} Buffer;
+typedef struct m_List {
+    m_Buffer buffer;
+    I32 count;
+    m_ItemComparer comparer;
+} m_List;
 
-typedef struct List {
-    isize itemsize;
-    isize len;  /* number of items */
-    isize cap;  /* capacity (value = buffer.size / itemsize) */
-    Buffer buf;
-} List;
+typedef struct m_Dict {
+    m_List keys;
+    m_List values;
+} m_Dict;
 
-typedef struct Map {
-    List keys;
-    List values;
-} Map;
+typedef struct m_StrBuffer {
+    m_Buffer buffer;
+    I32 length;
+} m_StrBuffer;
 
-typedef struct String {
-    List l;
-} String;
+typedef enum m_LogLevel {
+    M_LOG_TRACE,
+    M_LOG_INFO,
+    M_LOG_WARN,
+    M_LOG_ERROR,
+    M_LOG_FATAL
+} m_LogLevel;
 
-extern Alloc *default_alloc;
+void m_set_loglevel(m_LogLevel level);
+void m_log_raw(m_LogLevel level, const char* format, ...);
 
-Alloc *get_default_alloc(void);
+void m_set_allocator(m_Allocator *allocator);
+void m_reset_allocator(void);
+m_Allocator *m_get_allocator(void);
 
-ierr b_setsize(Buffer *b, isize size, Alloc *a);
+m_Buffer* mb_create(I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void mb_destroy(m_Buffer* buffer, IErr* errptr);
+m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void ml_destroy(m_List* list, IErr* errptr);
+m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void md_destroy(m_Dict* dict, IErr* errptr);
+m_StrBuffer* ms_create(I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void ms_destroy(m_StrBuffer* strbuffer, IErr* errptr);
 
-List *l_create(isize itemsize, isize init_cap, Alloc *a, ierr *errptr);
-ierr l_destroy(List *l, Alloc *a);
-ierr l_init(List *l, isize itemsize, isize init_cap, Alloc *a);
-ierr l_setcap(List *l, isize cap, Alloc *a);
-ierr l_push(List *l, void *item, Alloc *a);
-ierr l_put(List *l, void *item, isize index);
-void *l_pop(List *l, ierr *errptr);
-void *l_get(List *l, isize index, ierr *errptr);
-ierr l_swap(List *l, isize i1, isize i2);
-ierr l_clear(List *l) ;
-ierr l_rm_swap(List *l, isize index);
-ierr l_rm_move(List *l, isize index);
-ierr l_rm_move_n(List *l, isize index, isize n);
-ierr l_insert(List *l, isize index, void *item, Alloc *a);
-ierr l_insert_empty_n(List *l, isize index, isize n, Alloc *a) ;
-isize l_find(List *l, void *item, ierr *errptr);
-isize l_len(List *l, ierr *errptr);
-isize l_cap(List *l, ierr *errptr);
+void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr);
 
-Map *m_create(isize key_size, isize value_size, isize init_cap, Alloc *a, ierr *errptr);
-ierr m_destroy(Map *l, Alloc *a);
-ierr m_init(Map *m, isize key_size, isize value_size, isize init_cap, Alloc *a);
-ierr m_setcap(Map *m, isize cap, Alloc *a);
-ierr m_put(Map *m, void *key, void *value, Alloc *a);
-void *m_get(Map *m, void *key, ierr *errptr);
-ierr m_rm(Map *m, void *key, Alloc *a);
-ierr m_clear(Map *m);
-isize m_len(Map *m, ierr *errptr);
-isize m_cap(Map *m, ierr *errptr);
+void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void ml_setcap(m_List* list, I32 newcap, IErr* errptr);
+void ml_clear(m_List* list, IErr* errptr);
+void ml_push(m_List* list, void* item, IErr* errptr);
+void* ml_pop(m_List* list, IErr* errptr);
+I32 ml_count(m_List* list, IErr* errptr);
+void* ml_get(m_List* list, I32 index, IErr* errptr);
+void ml_insert(m_List* list, I32 index, void* item, IErr* errptr);
+void ml_remove(m_List* list, I32 index, IErr* errptr);
+void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr);
+void ml_remove_swap(m_List* list, I32 index, IErr* errptr);
+I32 ml_find(m_List* list, void* item, IErr* errptr);
+void ml_sort(m_List* list, IErr* errptr);
 
-String *s_create(isize init_cap, Alloc *a, ierr *errptr);
-ierr s_destroy(String *s, Alloc *a);
-ierr s_setcap(String *s, isize cap, Alloc *a);
-isize s_len(String *s, ierr *errptr);
-isize s_cap(String *s, ierr *errptr);
-ierr s_clear(String *s);
-char *s_get(String *s, ierr *errptr);
-ierr s_cat(String *s, const char *cstr, Alloc *a);
-ierr s_cat_cstr(String *s, char *cstr, Alloc *a);
-ierr s_cat_char(String *s, char c, Alloc *a);
-ierr s_cat_f32(String *s, f32 f, Alloc *a);
-ierr s_cat_f64(String *s, f64 f, Alloc *a);
-ierr s_cat_i8(String *s, i8 x, Alloc *a);
-ierr s_cat_i16(String *s, i16 x, Alloc *a);
-ierr s_cat_i32(String *s, i32 x, Alloc *a);
-ierr s_cat_i64(String *s, i64 x, Alloc *a);
-ierr s_cat_isize(String *s, isize i, Alloc *a);
-ierr s_cat_u8(String *s, u8 x, Alloc *a);
-ierr s_cat_u16(String *s, u16 x, Alloc *a);
-ierr s_cat_u32(String *s, u32 x, Alloc *a);
-ierr s_cat_u64(String *s, u64 x, Alloc *a);
-ierr s_cat_usize(String *s, usize x, Alloc *a);
+void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
+void md_setcap(m_Dict* dict, I32 newcap, IErr* errptr);
+void md_clear(m_Dict* dict, IErr* errptr);
+void* md_get(m_Dict* dict, void* key, IErr* errptr);
+void md_put(m_Dict* dict, void* key, void* value, IErr* errptr);
+Bool md_has(m_Dict* dict, void* key, IErr* errptr);
+void md_remove(m_Dict* dict, void* key, IErr* errptr);
+void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr);
 
+void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr);
+void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr);
+void ms_clear(m_StrBuffer* strbuffer, IErr* errptr);
+char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr);
+void ms_cat(m_StrBuffer* strbuffer, const char* format, ...);
+void ms_trim(m_StrBuffer* strbuffer, IErr* errptr);
+void ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr);
+I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr);
 
-#endif  /* _M_H_INCLUDED_ */
+#endif  // _M_H_
