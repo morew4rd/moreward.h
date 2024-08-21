@@ -207,7 +207,7 @@ typedef size_t      USize;
 typedef ptrdiff_t   ISize;
 typedef int32_t     IErr;
 
-#define m_countof(a)                (isize)(sizeof(a) / sizeof(*(a)))
+#define m_countof(a)                (size_t)(sizeof(a) / sizeof(*(a)))
 #define m_max(a, b)                 ((a)>(b) ? (a) : (b))
 #define m_min(a, b)                 ((a)<(b) ? (a) : (b))
 
