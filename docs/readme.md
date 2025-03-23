@@ -132,11 +132,11 @@ A dynamic string buffer for efficient manipulation.
 - `ms_init(m_StrBuffer* strbuffer, I32 itemcap)`: Initializes an existing string buffer.
 - `ms_setcap(m_StrBuffer* strbuffer, I32 newcap)`: Resizes the capacity.
 - `ms_clear(m_StrBuffer* strbuffer)`: Clears the contents.
-- `char* ms_getstr(m_StrBuffer* strbuffer)`: Returns the current string.
-- `ms_cat(m_StrBuffer* strbuffer, const char* format, ...)`: Appends a formatted string.
+- `Str ms_getstr(m_StrBuffer* strbuffer)`: Returns the current string.
+- `ms_cat(m_StrBuffer* strbuffer, CStr format, ...)`: Appends a formatted string.
 - `ms_trim(m_StrBuffer* strbuffer)`: Trims leading/trailing whitespace.
 - `ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest)`: Extracts a substring into another buffer.
-- `I32 ms_find(m_StrBuffer* strbuffer, const char* substring)`: Finds the position of a substring (or -1 if not found).
+- `I32 ms_find(m_StrBuffer* strbuffer, CStr substring)`: Finds the position of a substring (or -1 if not found).
 
 ## Logging System
 
@@ -151,7 +151,7 @@ The logging system provides configurable severity levels for debugging and monit
 
 ### Functions and Macros
 - `m_set_loglevel(m_LogLevel level)`: Sets the minimum log level to display.
-- `m_log_raw(m_LogLevel level, const char* format, ...)`: Logs a raw message.
+- `m_log_raw(m_LogLevel level, CStr format, ...)`: Logs a raw message.
 - Convenience Macros:
   - `m_log(format, ...)`: Logs at INFO level.
   - `m_log_trace(format, ...)`: Logs at TRACE level.

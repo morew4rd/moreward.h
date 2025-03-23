@@ -459,11 +459,11 @@ Void ms_clear(m_StrBuffer* strbuffer) {
     strbuffer->buffer.data[0] = '\0';
 }
 
-char* ms_getstr(m_StrBuffer* strbuffer) {
-    return (char*)strbuffer->buffer.data;
+Str ms_getstr(m_StrBuffer* strbuffer) {
+    return (Str)strbuffer->buffer.data;
 }
 
-IErr ms_cat(m_StrBuffer* strbuffer, const char* format, ...) {
+IErr ms_cat(m_StrBuffer* strbuffer, CStr format, ...) {
     if (!strbuffer) {
         return M_ERR_NULL_POINTER;
     }
@@ -485,7 +485,7 @@ IErr ms_cat(m_StrBuffer* strbuffer, const char* format, ...) {
         }
     }
 
-    vsprintf((char*)strbuffer->buffer.data + strbuffer->length, format, args);
+    vsprintf((Str)strbuffer->buffer.data + strbuffer->length, format, args);
     strbuffer->length = newlength;
     strbuffer->buffer.data[strbuffer->length] = '\0';
 
@@ -518,19 +518,19 @@ IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest)
     if (err != 0) {
         return err;
     }
-    strncpy((char*)dest->buffer.data, (char*)strbuffer->buffer.data + start, actual_length);
+    strncpy((Str)dest->buffer.data, (Str)strbuffer->buffer.data + start, actual_length);
     dest->length = actual_length;
     dest->buffer.data[dest->length] = '\0';
     return 0; // Success
 }
 
-I32 ms_find(m_StrBuffer* strbuffer, const char* substring) {
+I32 ms_find(m_StrBuffer* strbuffer, CStr substring) {
     if (strbuffer->length == 0 || !substring || *substring == '\0') {
         return -1;
     }
 
-    char* found = strstr((char*)strbuffer->buffer.data, substring);
-    return found ? (found - (char*)strbuffer->buffer.data) : -1;
+    Str found = strstr((Str)strbuffer->buffer.data, substring);
+    return found ? (found - (Str)strbuffer->buffer.data) : -1;
 }
 
 // Logging functions
@@ -540,7 +540,7 @@ Void m_set_loglevel(m_LogLevel level) {
     current_log_level = level;
 }
 
-Void m_log_raw(m_LogLevel level, const char* format, ...) {
+Void m_log_raw(m_LogLevel level, CStr format, ...) {
     if (level < current_log_level) {
         return;
     }

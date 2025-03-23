@@ -26,11 +26,11 @@ typedef uint32_t    U32;
 typedef uint64_t    U64;
 typedef float       F32;
 typedef double      F64;
-typedef char*       Str;
-typedef const char* CStr;
+typedef char       *Str;
+typedef const char *CStr;
 typedef size_t      Sz;
 typedef ptrdiff_t   ISz;
-typedef int32_t     IErr;
+typedef int         IErr;
 
 #define m_countof(a)                (Sz)(sizeof(a) / sizeof(*(a)))
 #define m_max(a, b)                 ((a)>(b) ? (a) : (b))
@@ -50,6 +50,7 @@ typedef int32_t     IErr;
 #define m_log_fatal(format, ...)    m_tracelog(M_LOG_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
 enum {
+    M_OK = 0,
     M_ERR_NULL_POINTER = 1000000,
     M_ERR_ALLOCATION_FAILED,
     M_ERR_OUT_OF_BOUNDS,
@@ -97,7 +98,7 @@ typedef enum m_LogLevel {
 } m_LogLevel;
 
 Void m_set_loglevel(m_LogLevel level);
-Void m_log_raw(m_LogLevel level, const char* format, ...);
+Void m_log_raw(m_LogLevel level, CStr format, ...);
 
 Void m_set_allocator(m_Allocator *allocator);
 Void m_reset_allocator(Void);
@@ -146,10 +147,10 @@ Void ms_destroy(m_StrBuffer* strbuffer);
 IErr ms_init(m_StrBuffer* strbuffer, I32 itemcap);
 IErr ms_setcap(m_StrBuffer* strbuffer, I32 newcap);
 Void ms_clear(m_StrBuffer* strbuffer);
-char* ms_getstr(m_StrBuffer* strbuffer);
-IErr ms_cat(m_StrBuffer* strbuffer, const char* format, ...);
+Str ms_getstr(m_StrBuffer* strbuffer);
+IErr ms_cat(m_StrBuffer* strbuffer, CStr format, ...);
 Void ms_trim(m_StrBuffer* strbuffer);
 IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest);
-I32 ms_find(m_StrBuffer* strbuffer, const char* substring);
+I32 ms_find(m_StrBuffer* strbuffer, CStr substring);
 
 #endif /* _MG_H */

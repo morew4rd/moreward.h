@@ -35,7 +35,7 @@ In all other C files, include the header normally without the definition:
 - Unsigned Integers: `U8, U16, U32, U64` (8, 16, 32, 64 bits)
 - Floating-Point: `F32, F64` (32, 64 bits)
 - Boolean: `Bool` (true/false)
-- Strings: `Str` (mutable char*), `CStr` (immutable const char*)
+- Strings: `Str` (mutable Str), `CStr` (immutable CStr)
 - Sizes: `Sz` (unsigned Sz), `ISz` (signed ptrdiff_t)
 - Error Code: `IErr` (int32_t, 0 for success, non-zero for errors)
 
@@ -139,11 +139,11 @@ A dynamic string buffer for efficient manipulation.
 - `ms_init(m_StrBuffer* strbuffer, I32 itemcap)`: Initializes an existing string buffer.
 - `ms_setcap(m_StrBuffer* strbuffer, I32 newcap)`: Resizes the capacity.
 - `ms_clear(m_StrBuffer* strbuffer)`: Clears the contents.
-- `char* ms_getstr(m_StrBuffer* strbuffer)`: Returns the current string.
-- `ms_cat(m_StrBuffer* strbuffer, const char* format, ...)`: Appends a formatted string.
+- `Str ms_getstr(m_StrBuffer* strbuffer)`: Returns the current string.
+- `ms_cat(m_StrBuffer* strbuffer, CStr format, ...)`: Appends a formatted string.
 - `ms_trim(m_StrBuffer* strbuffer)`: Trims leading/trailing whitespace.
 - `ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest)`: Extracts a substring into another buffer.
-- `I32 ms_find(m_StrBuffer* strbuffer, const char* substring)`: Finds the position of a substring (or -1 if not found).
+- `I32 ms_find(m_StrBuffer* strbuffer, CStr substring)`: Finds the position of a substring (or -1 if not found).
 
 ## Logging System
 
@@ -158,7 +158,7 @@ The logging system provides configurable severity levels for debugging and monit
 
 ### Functions and Macros
 - `m_set_loglevel(m_LogLevel level)`: Sets the minimum log level to display.
-- `m_log_raw(m_LogLevel level, const char* format, ...)`: Logs a raw message.
+- `m_log_raw(m_LogLevel level, CStr format, ...)`: Logs a raw message.
 - Convenience Macros:
   - `m_log(format, ...)`: Logs at INFO level.
   - `m_log_trace(format, ...)`: Logs at TRACE level.
@@ -204,11 +204,11 @@ typedef uint32_t    U32;
 typedef uint64_t    U64;
 typedef float       F32;
 typedef double      F64;
-typedef char*       Str;
-typedef const char* CStr;
+typedef Str       Str;
+typedef const char *CStr;
 typedef size_t      Sz;
 typedef ptrdiff_t   ISz;
-typedef int32_t     IErr;
+typedef int         IErr;
 
 #define m_countof(a)                (Sz)(sizeof(a) / sizeof(*(a)))
 #define m_max(a, b)                 ((a)>(b) ? (a) : (b))
@@ -228,6 +228,7 @@ typedef int32_t     IErr;
 #define m_log_fatal(format, ...)    m_tracelog(M_LOG_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
 enum {
+    M_OK = 0,
     M_ERR_NULL_POINTER = 1000000,
     M_ERR_ALLOCATION_FAILED,
     M_ERR_OUT_OF_BOUNDS,
@@ -275,7 +276,7 @@ typedef enum m_LogLevel {
 } m_LogLevel;
 
 Void m_set_loglevel(m_LogLevel level);
-Void m_log_raw(m_LogLevel level, const char* format, ...);
+Void m_log_raw(m_LogLevel level, CStr format, ...);
 
 Void m_set_allocator(m_Allocator *allocator);
 Void m_reset_allocator(Void);
@@ -324,11 +325,11 @@ Void ms_destroy(m_StrBuffer* strbuffer);
 IErr ms_init(m_StrBuffer* strbuffer, I32 itemcap);
 IErr ms_setcap(m_StrBuffer* strbuffer, I32 newcap);
 Void ms_clear(m_StrBuffer* strbuffer);
-char* ms_getstr(m_StrBuffer* strbuffer);
-IErr ms_cat(m_StrBuffer* strbuffer, const char* format, ...);
+Str ms_getstr(m_StrBuffer* strbuffer);
+IErr ms_cat(m_StrBuffer* strbuffer, CStr format, ...);
 Void ms_trim(m_StrBuffer* strbuffer);
 IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest);
-I32 ms_find(m_StrBuffer* strbuffer, const char* substring);
+I32 ms_find(m_StrBuffer* strbuffer, CStr substring);
 
 
 
@@ -796,11 +797,11 @@ Void ms_clear(m_StrBuffer* strbuffer) {
     strbuffer->buffer.data[0] = '\0';
 }
 
-char* ms_getstr(m_StrBuffer* strbuffer) {
-    return (char*)strbuffer->buffer.data;
+Str ms_getstr(m_StrBuffer* strbuffer) {
+    return (Str)strbuffer->buffer.data;
 }
 
-IErr ms_cat(m_StrBuffer* strbuffer, const char* format, ...) {
+IErr ms_cat(m_StrBuffer* strbuffer, CStr format, ...) {
     if (!strbuffer) {
         return M_ERR_NULL_POINTER;
     }
@@ -822,7 +823,7 @@ IErr ms_cat(m_StrBuffer* strbuffer, const char* format, ...) {
         }
     }
 
-    vsprintf((char*)strbuffer->buffer.data + strbuffer->length, format, args);
+    vsprintf((Str)strbuffer->buffer.data + strbuffer->length, format, args);
     strbuffer->length = newlength;
     strbuffer->buffer.data[strbuffer->length] = '\0';
 
@@ -855,19 +856,19 @@ IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest)
     if (err != 0) {
         return err;
     }
-    strncpy((char*)dest->buffer.data, (char*)strbuffer->buffer.data + start, actual_length);
+    strncpy((Str)dest->buffer.data, (Str)strbuffer->buffer.data + start, actual_length);
     dest->length = actual_length;
     dest->buffer.data[dest->length] = '\0';
     return 0; // Success
 }
 
-I32 ms_find(m_StrBuffer* strbuffer, const char* substring) {
+I32 ms_find(m_StrBuffer* strbuffer, CStr substring) {
     if (strbuffer->length == 0 || !substring || *substring == '\0') {
         return -1;
     }
 
-    char* found = strstr((char*)strbuffer->buffer.data, substring);
-    return found ? (found - (char*)strbuffer->buffer.data) : -1;
+    Str found = strstr((Str)strbuffer->buffer.data, substring);
+    return found ? (found - (Str)strbuffer->buffer.data) : -1;
 }
 
 // Logging functions
@@ -877,7 +878,7 @@ Void m_set_loglevel(m_LogLevel level) {
     current_log_level = level;
 }
 
-Void m_log_raw(m_LogLevel level, const char* format, ...) {
+Void m_log_raw(m_LogLevel level, CStr format, ...) {
     if (level < current_log_level) {
         return;
     }
