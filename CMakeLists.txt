@@ -6,41 +6,31 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(dev_src
-    src/alloc.c
-    src/buffer.c
-    src/list.c
-    src/dict.c
-    src/strbuffer.c
-    src/log.c
+    src/mg.c
 )
 
 set(test_src
     tests/tests.c
-    tests/test_list.c
-    tests/test_dict.c
-    tests/test_strbuffer.c
-    tests/test_create_destroy.c
 )
+
+set(sample_src
+    sample/sample.c
+)
+
 
 add_executable(unit_tests)
 target_compile_definitions(unit_tests PRIVATE UNIT_TESTS)
-target_include_directories(unit_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(unit_tests PRIVATE deps/utest)
+target_include_directories(unit_tests PRIVATE src)
 target_sources(unit_tests PRIVATE
     ${dev_src}
     ${test_src}
 )
 
-add_executable(e2e_tests_two_files)
-target_compile_definitions(e2e_tests_two_files PRIVATE E2E_TESTS_TWO_FILES)
-target_include_directories(e2e_tests_two_files PRIVATE ${CMAKE_SOURCE_DIR})
-target_sources(e2e_tests_two_files PRIVATE
-    mg.c
-    ${test_src}
-)
-
 add_executable(e2e_tests)
-target_compile_definitions(unit_tests PRIVATE E2E_TESTS)
-target_include_directories(e2e_tests PRIVATE ${CMAKE_SOURCE_DIR})
+target_compile_definitions(e2e_tests PRIVATE E2E_TESTS)
+target_include_directories(e2e_tests PRIVATE deps/utest)
+target_include_directories(e2e_tests PRIVATE ./)
 target_sources(e2e_tests PRIVATE
     ${test_src}
 )
@@ -48,5 +38,5 @@ target_sources(e2e_tests PRIVATE
 add_executable(sample)
 target_include_directories(sample PRIVATE ${CMAKE_SOURCE_DIR})
 target_sources(sample PRIVATE
-    sample/sample.c
+    ${sample_src}
 )

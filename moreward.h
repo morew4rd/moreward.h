@@ -5,177 +5,179 @@
 
 License (MIT) is at the EOF .
 
+# moreward.h
+
 ## Overview
 
-`moreward.h` is a header file designed to provide a set of common data structures and utility functions for C programming. It includes definitions for various types, memory allocation macros, and structures for lists, dictionaries, and string buffers. The file also provides logging capabilities and custom allocator support.
+moreward.h is a lightweight, single-header C library designed to provide essential data structures and utility functions. It includes dynamic arrays (lists), key-value stores (dictionaries), string buffers, and a flexible logging system. The library supports custom memory allocators for precise control over memory management, making it suitable for performance-critical applications or resource-constrained environments.
 
 ## Setup
 
-From only one `.c` file set `MOREWARD_IMPL` before including the library:
+To use moreward.h, define MOREWARD_IMPL in exactly one C file before including the header to include the implementation:
 
 ```c
 #define MOREWARD_IMPL
 #include "moreward.h"
 ```
 
-From other `.c` files, you can include it normally:
+In all other C files, include the header normally without the definition:
 
 ```c
 #include "moreward.h"
 ```
 
-Alternatively, you can use "mg.h" and "mg.c" files. Include the c file in your build. Rest of the document applies either way you set the library up.
+**Note:** Alternatively, you can use the mg.h (header) and mg.c (implementation) files from src directly. Include mg.c in your build process, and the rest of this documentation still applies.
 
 ## Types
 
-- **Primitive Types**:
-  - `I8`, `I16`, `I32`, `I64`: Signed integers of 8, 16, 32, and 64 bits respectively.
-  - `U8`, `U16`, `U32`, `U64`: Unsigned integers of 8, 16, 32, and 64 bits respectively.
-  - `F32`, `F64`: Floating-point numbers of 32 and 64 bits respectively.
-  - `Bool`: Boolean type.
-  - `Str`, `CStr`: Strings and constant strings.
-  - `USize`, `ISize`: Size types for unsigned and signed sizes.
-  - `IErr`: Integer type for error codes.
+### Primitive Types
+- Signed Integers: `I8, I16, I32, I64` (8, 16, 32, 64 bits)
+- Unsigned Integers: `U8, U16, U32, U64` (8, 16, 32, 64 bits)
+- Floating-Point: `F32, F64` (32, 64 bits)
+- Boolean: `Bool` (true/false)
+- Strings: `Str` (mutable char*), `CStr` (immutable const char*)
+- Sizes: `USize` (unsigned size_t), `ISize` (signed ptrdiff_t)
+- Error Code: `IErr` (int32_t, 0 for success, non-zero for errors)
 
-- **Structures**:
-  - `m_Allocator`: Defines a custom memory allocator with `malloc`, `realloc`, and `free` functions, along with a `userdata` pointer for context.
-  - `m_Buffer`: Represents a generic buffer with a pointer to data, item size, capacity, and an allocator.
-  - `m_List`: A dynamic array list with a buffer, count of items, and an item comparison function.
-  - `m_Dict`: A dictionary implemented as two lists: one for keys and one for values.
-  - `m_StrBuffer`: A string buffer built on top of `m_Buffer` with a length field.
+### Structures
+- `m_Allocator`: Custom memory allocator with function pointers for malloc, realloc, free, and a userdata pointer for context.
+- `m_Buffer`: Generic dynamic buffer for raw data, with item size and capacity.
+- `m_List`: Dynamic array built on m_Buffer, with an optional item comparison function.
+- `m_Dict`: Key-value store using two m_Lists—one for keys, one for values.
+- `m_StrBuffer`: String buffer for efficient manipulation, built on m_Buffer.
 
-- **Enumerations**:
-  - `m_LogLevel`: Defines log levels for tracing, information, warnings, errors, and fatal messages.
+### Enumerations
+- `m_LogLevel`: Logging severity levels:
+  - `M_LOG_TRACE`: Verbose debugging
+  - `M_LOG_INFO`: General updates
+  - `M_LOG_WARN`: Potential problems
+  - `M_LOG_ERROR`: Recoverable errors
+  - `M_LOG_FATAL`: Critical failures
 
-## Functions
+## Memory Management
 
-### Logging
+The library uses a global allocator for all memory operations, which can be customized for specific needs (e.g., memory pools or tracking).
 
-- `m_set_loglevel(m_LogLevel level)`: Sets the logging level.
-- `m_log_raw(m_LogLevel level, const char* format, ...)`: Logs a message with a specified level.
-- Macros like `m_log`, `m_log_trace`, `m_log_info`, `m_log_warn`, `m_log_error`, and `m_log_fatal` provide convenient logging with file and line information.
-
-### Memory Management
-
-- `m_set_allocator(m_Allocator *allocator)`: Sets a custom allocator.
-- `m_reset_allocator()`: Resets the allocator to the default.
+- `m_set_allocator(m_Allocator* allocator)`: Sets a custom allocator.
+- `m_reset_allocator()`: Reverts to the default allocator (standard malloc/realloc/free).
 - `m_get_allocator()`: Retrieves the current allocator.
 
-#### Custom Allocator
-
-The `m_Allocator` structure allows you to define custom memory allocation functions. This can be useful for tracking memory usage, using a custom memory pool, or integrating with a specific memory management system. To use a custom allocator, define an `m_Allocator` structure with your custom `malloc`, `realloc`, and `free` functions, and then call `m_set_allocator` with a pointer to this structure.
-
-Example:
+### Custom Allocator Example
 
 ```c
-m_Allocator custom_allocator = {
+void* my_malloc(USize size, void* userdata) {  }
+void* my_realloc(void* ptr, USize newsize, void* userdata) {  }
+void my_free(void* ptr, void* userdata) {  }
+
+m_Allocator custom = {
     .malloc = my_malloc,
     .realloc = my_realloc,
     .free = my_free,
-    .userdata = NULL
+    .userdata = NULL  // Optional context
 };
 
-m_set_allocator(&custom_allocator);
+m_set_allocator(&custom);
 ```
 
-### Error Handling
+## Error Handling
 
-The `IErr` type is used to return error codes from functions. Functions that can potentially fail will take a pointer to an `IErr` variable as an argument. If an error occurs, the function will set the value of this variable to a non-zero error code. You should check the value of this variable after calling such functions to determine if an error occurred.
-
-Example:
+Functions that may fail return an IErr code directly (0 indicates success, non-zero indicates an error). Check the return value to handle errors:
 
 ```c
-IErr err = 0;
-mb_init(&buffer, itemsize, itemcap, allocator, &err);
+IErr err = ml_push(&list, &item);
 if (err != 0) {
-    // Handle error
+    m_log_error("Failed to push item: error code %d", err);
 }
 ```
 
-### Buffer Management
+## Data Structures
 
-- `mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr)`: Initializes a buffer.
-- `mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr)`: Sets the capacity of a buffer.
+### Buffer (m_Buffer)
+A low-level dynamic buffer for raw data.
 
-### List Management
+-` m_Buffer mb_create(I32 itemsize, I32 itemcap)`: Creates a buffer with specified item size and capacity.
+- `void mb_destroy(m_Buffer* buffer)`: Frees the buffer’s memory.
+- `void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap)`: Initializes an existing buffer.
+- `IErr mb_setcap(m_Buffer* buffer, I32 newcap)`: Resizes the buffer’s capacity.
 
-- `ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr)`: Initializes a list.
-- `ml_setcap(m_List* list, I32 newcap, IErr* errptr)`: Sets the capacity of a list.
-- `ml_push(m_List* list, void* item, IErr* errptr)`: Adds an item to the list.
-- `void* ml_pop(m_List* list, IErr* errptr)`: Removes and returns the last item from the list.
-- `I32 ml_count(m_List* list, IErr* errptr)`: Returns the number of items in the list.
-- `void* ml_get(m_List* list, I32 index, IErr* errptr)`: Retrieves an item at a specified index.
-- `ml_insert(m_List* list, I32 index, void* item, IErr* errptr)`: Inserts an item at a specified index.
-- `ml_remove(m_List* list, I32 index, IErr* errptr)`: Removes an item at a specified index.
-- `ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr)`: Removes a range of items.
-- `ml_remove_swap(m_List* list, I32 index, IErr* errptr)`: Removes an item by swapping it with the last item.
-- `I32 ml_find(m_List* list, void* item, IErr* errptr)`: Finds the index of an item.
-- `ml_clear(m_List* list, IErr* errptr)`: Clears the list.
-- `ml_sort(m_List* list, IErr* errptr)`: Sorts the list.
+### List (m_List)
+A dynamic array with flexible operations.
 
-### Dictionary Management
+- `m_List ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer)`: Creates a list with an optional comparison function for sorting/finding.
+- `void ml_destroy(m_List* list)`: Frees the list.
+- `void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer)`: Initializes an existing list.
+- `IErr ml_push(m_List* list, void* item)`: Appends an item.
+- `void* ml_pop(m_List* list)`: Removes and returns the last item.
+- `I32 ml_count(m_List* list)`: Returns the number of items.
+- `void* ml_get(m_List* list, I32 index)`: Retrieves an item by index.
+- `IErr ml_insert(m_List* list, I32 index, void* item)`: Inserts an item at an index.
+- `IErr ml_remove(m_List* list, I32 index)`: Removes an item at an index.
+- `IErr ml_remove_range(m_List* list, I32 startindex, I32 count)`: Removes a range of items.
+- `IErr ml_remove_swap(m_List* list, I32 index)`: Removes an item by swapping with the last (faster, unordered).
+- `I32 ml_find(m_List* list, void* item)`: Returns the index of an item (or -1 if not found).
+- `void ml_clear(m_List* list)`: Removes all items.
+- `void ml_sort(m_List* list)`: Sorts the list using the provided comparer.
 
-- `md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr)`: Initializes a dictionary.
-- `md_setcap(m_Dict* dict, I32 newcap, IErr* errptr)`: Sets the capacity of a dictionary.
-- `void* md_get(m_Dict* dict, void* key, IErr* errptr)`: Retrieves a value by key.
-- `md_put(m_Dict* dict, void* key, void* value, IErr* errptr)`: Adds or updates a key-value pair.
-- `Bool md_has(m_Dict* dict, void* key, IErr* errptr)`: Checks if a key exists.
-- `md_remove(m_Dict* dict, void* key, IErr* errptr)`: Removes a key-value pair.
-- `md_remove_ordered(m_Dict* dict, void* key, IErr* errptr)`: Removes a key-value pair while maintaining order.
-- `md_clear(m_Dict* dict, IErr* errptr)`: Clears the dictionary.
+### Dictionary (m_Dict)
+A key-value store implemented with two lists.
 
-### String Buffer Management
+- `m_Dict md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer)`: Creates a dictionary.
+- `void md_destroy(m_Dict* dict)`: Frees the dictionary.
+- `void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer)`: Initializes an existing dictionary.
+- `void* md_get(m_Dict* dict, void* key)`: Retrieves a value by key (NULL if not found).
+- `IErr md_put(m_Dict* dict, void* key, void* value)`: Adds or updates a key-value pair.
+- `Bool md_has(m_Dict* dict, void* key)`: Checks if a key exists.
+- `IErr md_remove(m_Dict* dict, void* key)`: Removes a key-value pair (unordered).
+- `IErr md_remove_ordered(m_Dict* dict, void* key)`: Removes a key-value pair while preserving order.
+- `void md_clear(m_Dict* dict)`: Removes all entries.
 
-- `ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr)`: Initializes a string buffer.
-- `ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr)`: Sets the capacity of a string buffer.
-- `ms_clear(m_StrBuffer* strbuffer, IErr* errptr)`: Clears the string buffer.
-- `char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr)`: Retrieves the string from the buffer.
-- `ms_cat(m_StrBuffer* strbuffer, const char* format, ...)`: Appends formatted text to the string buffer.
-- `ms_trim(m_StrBuffer* strbuffer, IErr* errptr)`: Trims the string buffer.
-- `ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr)`: Extracts a substring.
-- `I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr)`: Finds the index of a substring.
+### String Buffer (m_StrBuffer)
+A dynamic string buffer for efficient manipulation.
 
-### Logging System
+- `m_StrBuffer ms_create(I32 itemcap)`: Creates a string buffer with initial capacity.
+- `void ms_destroy(m_StrBuffer* strbuffer)`: Frees the string buffer.
+- `void ms_init(m_StrBuffer* strbuffer, I32 itemcap)`: Initializes an existing string buffer.
+- `IErr ms_setcap(m_StrBuffer* strbuffer, I32 newcap)`: Resizes the capacity.
+- `void ms_clear(m_StrBuffer* strbuffer)`: Clears the contents.
+- `char* ms_getstr(m_StrBuffer* strbuffer)`: Returns the current string.
+- `void ms_cat(m_StrBuffer* strbuffer, const char* format, ...)`: Appends a formatted string.
+- `void ms_trim(m_StrBuffer* strbuffer)`: Trims leading/trailing whitespace.
+- `IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest)`: Extracts a substring into another buffer.
+- `I32 ms_find(m_StrBuffer* strbuffer, const char* substring)`: Finds the position of a substring (or -1 if not found).
 
-The logging system in `moreward.h` allows you to log messages at different levels of severity. The available log levels are:
+## Logging System
 
-- `M_LOG_TRACE`: Detailed trace messages, typically used for debugging.
-- `M_LOG_INFO`: Informational messages that highlight the progress of the application.
-- `M_LOG_WARN`: Warning messages that indicate potential issues.
-- `M_LOG_ERROR`: Error messages that indicate issues that need attention.
-- `M_LOG_FATAL`: Fatal error messages that indicate critical issues requiring immediate attention.
+The logging system provides configurable severity levels for debugging and monitoring.
 
-To set the logging level, use the `m_set_loglevel` function:
+### Log Levels
+- `M_LOG_TRACE`: Verbose debugging
+- `M_LOG_INFO`: General updates
+- `M_LOG_WARN`: Potential problems
+- `M_LOG_ERROR`: Recoverable errors
+- `M_LOG_FATAL`: Critical failures
 
-```c
-m_set_loglevel(M_LOG_INFO);
-```
+### Functions and Macros
+- `void m_set_loglevel(m_LogLevel level)`: Sets the minimum log level to display.
+- `void m_log_raw(m_LogLevel level, const char* format, ...)`: Logs a raw message.
+- Convenience Macros:
+  - `m_log(format, ...)`: Logs at INFO level.
+  - `m_log_trace(format, ...)`: Logs at TRACE level.
+  - `m_log_info(format, ...)`: Logs at INFO level.
+  - `m_log_warn(format, ...)`: Logs at WARN level.
+  - `m_log_error(format, ...)`: Logs at ERROR level.
+  - `m_log_fatal(format, ...)`: Logs at FATAL level.
 
-To log messages, use the `m_log_raw` function or the convenience macros:
+## Other macros
 
-```c
-m_log_info("This is an informational message.");
-m_log_error("This is an error message.");
-```
+- `m_alloc(n)`: Allocates n bytes using the current allocator.
+- `m_realloc(p, n)`: Reallocates memory to n bytes.
+- `m_free(p)`: Frees allocated memory.
+- `m_countof(a)`: Returns the number of elements in a static array.
+- `m_max(a, b)`: Returns the maximum of two values.
+- `m_min(a, b)`: Returns the minimum of two values.
 
-### Macros
 
-- `m_alloc(n)`: Allocates memory using the current allocator.
-- `m_realloc(p, n)`: Reallocates memory using the current allocator.
-- `m_free(p)`: Frees memory using the current allocator.
-- `m_log(format, ...)`: Logs an informational message.
-- `m_tracelog(level, file, line, format, ...)`: Logs a message with file and line information.
-- `m_log_trace(format, ...)`: Logs a trace message.
-- `m_log_info(format, ...)`: Logs an informational message.
-- `m_log_warn(format, ...)`: Logs a warning message.
-- `m_log_error(format, ...)`: Logs an error message.
-- `m_log_fatal(format, ...)`: Logs a fatal error message.
-- `m_try(expr, errptr)`: Executes an expression and checks for errors.
-- `m_try_ret(expr, errptr, retval)`: Executes an expression, checks for errors, and returns a value if an error occurs.
-
-This guide provides a brief overview of the types, functions, and macros available in `moreward.h`. For detailed usage and implementation, refer to the source code and comments within the file.
 */
-
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -213,8 +215,8 @@ typedef int32_t     IErr;
 #define m_max(a, b)                 ((a)>(b) ? (a) : (b))
 #define m_min(a, b)                 ((a)<(b) ? (a) : (b))
 
-#define m_alloc(n)                  m_get_allocator()->malloc((n), m_get_allocator()->userdata);
-#define m_realloc(p,n)              m_get_allocator()->realloc((p), (n), m_get_allocator()->userdata);
+#define m_alloc(n)                  m_get_allocator()->malloc((n), m_get_allocator()->userdata)
+#define m_realloc(p,n)              m_get_allocator()->realloc((p), (n), m_get_allocator()->userdata)
 #define m_free(p)                   m_get_allocator()->free((p), m_get_allocator()->userdata)
 
 #define m_tracelog(level, file, line, format, ...) \
@@ -226,27 +228,10 @@ typedef int32_t     IErr;
 #define m_log_error(format, ...)    m_tracelog(M_LOG_ERROR, __FILE__, __LINE__, format, ##__VA_ARGS__)
 #define m_log_fatal(format, ...)    m_tracelog(M_LOG_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
-#define m_try(expr, errptr) \
-    do { \
-        expr; \
-        if (errptr && *(errptr) != 0) { \
-            m_log_error("Error in %s: %d", __func__, *(errptr)); \
-            return; \
-        } \
-    } while (0)
-
-#define m_try_ret(expr, errptr, retval) \
-    do { \
-        expr; \
-        if (errptr && *(errptr) != 0) { \
-            m_log_error("Error in %s: %d", __func__, *(errptr)); \
-            return (retval); \
-        } \
-    } while (0)
-
 enum {
     M_ERR_NULL_POINTER = 1000000,
     M_ERR_OUT_OF_BOUNDS,
+    M_ERR_INVALID_OPERATION,
 };
 
 typedef struct m_Allocator {
@@ -296,56 +281,54 @@ void m_set_allocator(m_Allocator *allocator);
 void m_reset_allocator(void);
 m_Allocator *m_get_allocator(void);
 
+// Buffer functions
+m_Buffer* mb_create(I32 itemsize, I32 itemcap);
+void mb_destroy(m_Buffer* buffer);
+void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap);
+void mb_setcap(m_Buffer* buffer, I32 newcap);
 
+// List functions
+m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer);
+void ml_destroy(m_List* list);
+void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer);
+void ml_setcap(m_List* list, I32 newcap);
+void ml_clear(m_List* list);
+IErr ml_push(m_List* list, void* item);
+void* ml_pop(m_List* list);
+void* ml_get(m_List* list, I32 index);
+IErr ml_put(m_List* list, I32 index, void* item);
+IErr ml_insert(m_List* list, I32 index, void* item);
+IErr ml_remove(m_List* list, I32 index);
+IErr ml_remove_range(m_List* list, I32 startindex, I32 count);
+IErr ml_remove_swap(m_List* list, I32 index);
+I32 ml_count(m_List* list);
+I32 ml_find(m_List* list, void* item);
+void ml_sort(m_List* list);
 
-// NOTE: for create/destroy pair of functions should be used together. they allocate and free the objects in question.
-//       for stack alloc'd objects, use init/setcap functions. setcap to 0 frees up the internal allocations
+// Dictionary functions
+m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer);
+void md_destroy(m_Dict* dict);
+void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer);
+void md_setcap(m_Dict* dict, I32 newcap);
+void md_clear(m_Dict* dict);
+void* md_get(m_Dict* dict, void* key);
+IErr md_put(m_Dict* dict, void* key, void* value);
+Bool md_has(m_Dict* dict, void* key);
+IErr md_remove(m_Dict* dict, void* key);
+IErr md_remove_ordered(m_Dict* dict, void* key);
+I32 md_count(m_Dict* dict);
 
-m_Buffer* mb_create(I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr);
-void mb_destroy(m_Buffer* buffer, IErr* errptr);
-m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
-void ml_destroy(m_List* list, IErr* errptr);
-m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
-void md_destroy(m_Dict* dict, IErr* errptr);
-m_StrBuffer* ms_create(I32 itemcap, m_Allocator* allocator, IErr* errptr);
-void ms_destroy(m_StrBuffer* strbuffer, IErr* errptr);
-
-void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr);
-void mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr);
-
-void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
-void ml_setcap(m_List* list, I32 newcap, IErr* errptr);
-void ml_clear(m_List* list, IErr* errptr);
-void ml_push(m_List* list, void* item, IErr* errptr);
-void* ml_pop(m_List* list, IErr* errptr);
-void* ml_get(m_List* list, I32 index, IErr* errptr);
-void ml_put(m_List* list, I32 index, void* item, IErr* errptr);
-void ml_insert(m_List* list, I32 index, void* item, IErr* errptr);
-void ml_remove(m_List* list, I32 index, IErr* errptr);
-void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr);
-void ml_remove_swap(m_List* list, I32 index, IErr* errptr);
-I32 ml_count(m_List* list, IErr* errptr);
-I32 ml_find(m_List* list, void* item, IErr* errptr);
-void ml_sort(m_List* list, IErr* errptr);
-
-void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr);
-void md_setcap(m_Dict* dict, I32 newcap, IErr* errptr);
-void md_clear(m_Dict* dict, IErr* errptr);
-void* md_get(m_Dict* dict, void* key, IErr* errptr);
-void md_put(m_Dict* dict, void* key, void* value, IErr* errptr);
-Bool md_has(m_Dict* dict, void* key, IErr* errptr);
-void md_remove(m_Dict* dict, void* key, IErr* errptr);
-void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr);
-I32 md_count(m_Dict* dict, IErr* errptr);
-
-void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr);
-void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr);
-void ms_clear(m_StrBuffer* strbuffer, IErr* errptr);
-char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr);
+// String Buffer functions
+m_StrBuffer* ms_create(I32 itemcap);
+void ms_destroy(m_StrBuffer* strbuffer);
+void ms_init(m_StrBuffer* strbuffer, I32 itemcap);
+void ms_setcap(m_StrBuffer* strbuffer, I32 newcap);
+void ms_clear(m_StrBuffer* strbuffer);
+char* ms_getstr(m_StrBuffer* strbuffer);
 void ms_cat(m_StrBuffer* strbuffer, const char* format, ...);
-void ms_trim(m_StrBuffer* strbuffer, IErr* errptr);
-void ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr);
-I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr);
+void ms_trim(m_StrBuffer* strbuffer);
+IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest);
+I32 ms_find(m_StrBuffer* strbuffer, const char* substring);
 
 
 
@@ -354,13 +337,11 @@ I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr);
 
 #ifdef MOREWARD_IMPL
 
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h> // For isspace
-
 
 // Default malloc function
 static void* _default_malloc(size_t size, void* userdata) {
@@ -387,6 +368,7 @@ static m_Allocator _default_allocator = {
 
 static m_Allocator *_current_allocator = &_default_allocator;
 
+// Allocator management functions
 void m_set_allocator(m_Allocator *allocator) {
     _current_allocator = allocator;
 }
@@ -399,7 +381,7 @@ m_Allocator *m_get_allocator() {
     return _current_allocator;
 }
 
-
+// Helper function to free buffer data
 static void _buffer_free_data(m_Buffer* buffer) {
     if (buffer->data) {
         buffer->allocator->free(buffer->data, buffer->allocator->userdata);
@@ -408,58 +390,40 @@ static void _buffer_free_data(m_Buffer* buffer) {
     }
 }
 
-m_Buffer* mb_create(I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr) {
+// Buffer functions
+m_Buffer* mb_create(I32 itemsize, I32 itemcap) {
     m_Buffer* buffer = (m_Buffer*)m_alloc(sizeof(m_Buffer));
     if (!buffer) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return nil;
     }
-    mb_init(buffer, itemsize, itemcap, allocator, errptr);
-    if (errptr && *errptr != 0) {
-        m_free(buffer);
-        return nil;
-    }
+    mb_init(buffer, itemsize, itemcap);
     return buffer;
 }
 
-void mb_destroy(m_Buffer* buffer, IErr* errptr) {
+void mb_destroy(m_Buffer* buffer) {
     if (!buffer) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return;
     }
-    mb_setcap(buffer, 0, errptr);
+    mb_setcap(buffer, 0);
     m_free(buffer);
 }
 
-
-void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap, m_Allocator* allocator, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (allocator) {
-        buffer->allocator = allocator;
-    } else {
-        buffer->allocator = NULL;
-    }
+void mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap) {
+    buffer->allocator = m_get_allocator();
     buffer->data = NULL;
     buffer->itemsize = itemsize;
     buffer->itemcap = 0;
-    mb_setcap(buffer, itemcap, errptr);
+    mb_setcap(buffer, itemcap);
 }
 
-void mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (!buffer->allocator) {
-        buffer->allocator = m_get_allocator();
-    }
-
+void mb_setcap(m_Buffer* buffer, I32 newcap) {
     if (newcap == 0) {
         _buffer_free_data(buffer);
         return;
     }
 
     if (buffer->itemsize == 0) {
-        buffer->itemsize = 1;  // 1 byte is assumed. mainly for string buffers without init
+        buffer->itemsize = 1;  // Assume 1 byte if not set, mainly for string buffers
     }
 
     I32 new_size = buffer->itemsize * newcap;
@@ -470,471 +434,353 @@ void mb_setcap(m_Buffer* buffer, I32 newcap, IErr* errptr) {
         if (new_data) {
             buffer->data = new_data;
             buffer->itemcap = newcap;
-
-            // Zero out the new area if the buffer is expanded
             if (new_size > old_size) {
                 memset(buffer->data + old_size, 0, new_size - old_size);
             }
         } else {
-            if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: realloc failed
+            m_log_error("mb_setcap: realloc failed");
         }
     } else {
         buffer->data = (U8*)buffer->allocator->malloc(new_size, buffer->allocator->userdata);
         if (buffer->data) {
             buffer->itemcap = newcap;
-
-            // Zero out the entire newly allocated buffer
             memset(buffer->data, 0, new_size);
         } else {
-            if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: malloc failed
+            m_log_error("mb_setcap: malloc failed");
         }
     }
 }
-m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
+
+// List functions
+m_List* ml_create(I32 itemsize, I32 itemcap, m_ItemComparer comparer) {
     m_List* list = (m_List*)m_alloc(sizeof(m_List));
     if (!list) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return nil;
     }
-    ml_init(list, itemsize, itemcap, comparer, allocator, errptr);
-    if (errptr && *errptr != 0) {
-        m_free(list);
-        return nil;
-    }
+    ml_init(list, itemsize, itemcap, comparer);
     return list;
 }
 
-void ml_destroy(m_List* list, IErr* errptr) {
+void ml_destroy(m_List* list) {
     if (!list) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return;
     }
-    ml_clear(list, errptr);
-    mb_setcap(&list->buffer, 0, errptr);
+    ml_clear(list);
+    mb_setcap(&list->buffer, 0);
     m_free(list);
 }
 
 static I32 _default_comparer(void* item1, void* item2) {
-    if (item1 == item2) {
-        return 0;
-    } else if (item1 < item2) {
-        return -1;
-    } else {
-        return 1;
-    }
+    if (item1 == item2) return 0;
+    return (item1 < item2) ? -1 : 1;
 }
 
-// TODO: this won't work
-static I32 _int_comparer(void* item1, void* item2) {
-    if (*(int*)item1 == *(int*)item2) {
-        return 0;
-    } else if (*(int*)item1 < *(int*)item2) {
-        return -1;
-    } else {
-        return 1;
-    }
-}
-
-void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    mb_init(&list->buffer, itemsize, itemcap, allocator, errptr);
+void ml_init(m_List* list, I32 itemsize, I32 itemcap, m_ItemComparer comparer) {
+    mb_init(&list->buffer, itemsize, itemcap);
     list->count = 0;
-    list->comparer = comparer ? comparer : _int_comparer; // TODO: not int! Use default comparer if none is provided
+    list->comparer = comparer ? comparer : _default_comparer;
 }
 
-void ml_setcap(m_List* list, I32 newcap, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    mb_setcap(&list->buffer, newcap, errptr);
+void ml_setcap(m_List* list, I32 newcap) {
+    mb_setcap(&list->buffer, newcap);
 }
 
-void ml_push(m_List* list, void* item, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+IErr ml_push(m_List* list, void* item) {
     if (list->count >= list->buffer.itemcap) {
-        // Double the capacity if the list is full
-        ml_setcap(list, list->buffer.itemcap * 2, errptr);
-        if (errptr && *errptr != 0) return; // Return if error occurred
+        I32 newcap = list->buffer.itemcap * 2 ?: 1; // Double or start at 1
+        ml_setcap(list, newcap);
     }
     memcpy(list->buffer.data + (list->count * list->buffer.itemsize), item, list->buffer.itemsize);
     list->count++;
+    return 0; // Success
 }
 
-void* ml_pop(m_List* list, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+void* ml_pop(m_List* list) {
     if (list->count == 0) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: list is empty
         return NULL;
     }
     list->count--;
     return list->buffer.data + (list->count * list->buffer.itemsize);
 }
 
-I32 ml_count(m_List* list, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+I32 ml_count(m_List* list) {
     return list->count;
 }
 
-void* ml_get(m_List* list, I32 index, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-    if (index >= list->count) {
-
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+void* ml_get(m_List* list, I32 index) {
+    if (index < 0 || index >= list->count) {
         return NULL;
     }
     return list->buffer.data + (index * list->buffer.itemsize);
 }
 
-void ml_put(m_List* list, I32 index, void* item, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (index >= list->count) {
-        if (errptr) *errptr = M_ERR_OUT_OF_BOUNDS; // Error: index out of bounds
-        return;
+IErr ml_put(m_List* list, I32 index, void* item) {
+    if (index < 0 || index >= list->count) {
+        return M_ERR_OUT_OF_BOUNDS;
     }
-
-    if (list->count >= list->buffer.itemcap) {
-        // Double the capacity if the list is full
-        ml_setcap(list, list->buffer.itemcap * 2, errptr);
-        if (errptr && *errptr != 0) return; // Return if error occurred
-    }
-
-    // Copy the new item to the specified index
     memcpy(list->buffer.data + (index * list->buffer.itemsize), item, list->buffer.itemsize);
+    return 0; // Success
 }
 
-void ml_insert(m_List* list, I32 index, void* item, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (index > list->count) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
-        return;
+IErr ml_insert(m_List* list, I32 index, void* item) {
+    if (index < 0 || index > list->count) {
+        return M_ERR_OUT_OF_BOUNDS;
     }
     if (list->count >= list->buffer.itemcap) {
-        // Double the capacity if the list is full
-        ml_setcap(list, list->buffer.itemcap * 2, errptr);
-        if (errptr && *errptr != 0) return; // Return if error occurred
+        I32 newcap = list->buffer.itemcap * 2 ?: 1;
+        ml_setcap(list, newcap);
     }
-    // Move elements to the right to make space for the new item
-    memmove(list->buffer.data + ((index + 1) * list->buffer.itemsize), list->buffer.data + (index * list->buffer.itemsize), (list->count - index) * list->buffer.itemsize);
+    memmove(list->buffer.data + ((index + 1) * list->buffer.itemsize),
+            list->buffer.data + (index * list->buffer.itemsize),
+            (list->count - index) * list->buffer.itemsize);
     memcpy(list->buffer.data + (index * list->buffer.itemsize), item, list->buffer.itemsize);
     list->count++;
+    return 0; // Success
 }
 
-void ml_remove(m_List* list, I32 index, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (index >= list->count) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
-        return;
+IErr ml_remove(m_List* list, I32 index) {
+    if (index < 0 || index >= list->count) {
+        return M_ERR_OUT_OF_BOUNDS;
     }
-    // Move elements to the left to overwrite the removed item
-    memmove(list->buffer.data + (index * list->buffer.itemsize), list->buffer.data + ((index + 1) * list->buffer.itemsize), (list->count - index - 1) * list->buffer.itemsize);
+    memmove(list->buffer.data + (index * list->buffer.itemsize),
+            list->buffer.data + ((index + 1) * list->buffer.itemsize),
+            (list->count - index - 1) * list->buffer.itemsize);
     list->count--;
+    return 0; // Success
 }
 
-void ml_remove_range(m_List* list, I32 startindex, I32 count, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (startindex >= list->count || count == 0) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: invalid range
-        return;
+IErr ml_remove_range(m_List* list, I32 startindex, I32 count) {
+    if (startindex < 0 || startindex >= list->count || count <= 0) {
+        return M_ERR_OUT_OF_BOUNDS;
     }
     I32 endindex = startindex + count;
     if (endindex > list->count) {
         endindex = list->count;
     }
-    // Move elements to the left to overwrite the removed range
-    memmove(list->buffer.data + (startindex * list->buffer.itemsize), list->buffer.data + (endindex * list->buffer.itemsize), (list->count - endindex) * list->buffer.itemsize);
+    memmove(list->buffer.data + (startindex * list->buffer.itemsize),
+            list->buffer.data + (endindex * list->buffer.itemsize),
+            (list->count - endindex) * list->buffer.itemsize);
     list->count -= (endindex - startindex);
+    return 0; // Success
 }
 
-void ml_remove_swap(m_List* list, I32 index, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (index >= list->count) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
-        return;
+IErr ml_remove_swap(m_List* list, I32 index) {
+    if (index < 0 || index >= list->count) {
+        return M_ERR_OUT_OF_BOUNDS;
     }
-    // Swap the item at index with the last item
-    memcpy(list->buffer.data + (index * list->buffer.itemsize), list->buffer.data + ((list->count - 1) * list->buffer.itemsize), list->buffer.itemsize);
+    memcpy(list->buffer.data + (index * list->buffer.itemsize),
+           list->buffer.data + ((list->count - 1) * list->buffer.itemsize),
+           list->buffer.itemsize);
     list->count--;
+    return 0; // Success
 }
 
-I32 ml_find(m_List* list, void* item, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (list == NULL || item == NULL || list->comparer == NULL) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: invalid parameters
-        return -1; // Return -1 if any parameter is NULL
+I32 ml_find(m_List* list, void* item) {
+    if (!list || !item || !list->comparer) {
+        return -1;
     }
-
     for (I32 i = 0; i < list->count; ++i) {
         void* list_item = list->buffer.data + (i * list->buffer.itemsize);
         if (list->comparer(list_item, item) == 0) {
-            return i; // Return the index of the matching item
+            return i;
         }
     }
-
-    return -1; // Return -1 if no item matches
+    return -1;
 }
 
-void ml_clear(m_List* list, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+void ml_clear(m_List* list) {
     list->count = 0;
 }
 
-void ml_sort(m_List* list, IErr *errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    qsort(list->buffer.data, list->count, list->buffer.itemsize, (int (*)(const void*, const void*))list->comparer);
+void ml_sort(m_List* list) {
+    qsort(list->buffer.data, list->count, list->buffer.itemsize,
+          (int (*)(const void*, const void*))list->comparer);
 }
 
-m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
+// Dictionary functions
+m_Dict* md_create(I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer) {
     m_Dict* dict = (m_Dict*)m_alloc(sizeof(m_Dict));
     if (!dict) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return nil;
     }
-    md_init(dict, keysize, valuesize, itemcap, comparer, allocator, errptr);
-    if (errptr && *errptr != 0) {
-        m_free(dict);
-        return nil;
-    }
+    md_init(dict, keysize, valuesize, itemcap, comparer);
     return dict;
 }
 
-void md_destroy(m_Dict* dict, IErr* errptr) {
+void md_destroy(m_Dict* dict) {
     if (!dict) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return;
     }
-    md_clear(dict, errptr);
-    ml_setcap(&dict->keys, 0, errptr);
-    ml_setcap(&dict->values, 0, errptr);
+    md_clear(dict);
+    ml_setcap(&dict->keys, 0);
+    ml_setcap(&dict->values, 0);
     m_free(dict);
 }
 
-void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer, m_Allocator* allocator, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    ml_init(&dict->keys, keysize, itemcap, comparer, allocator, errptr);
-    ml_init(&dict->values, valuesize, itemcap, comparer, allocator, errptr);
+void md_init(m_Dict* dict, I32 keysize, I32 valuesize, I32 itemcap, m_ItemComparer comparer) {
+    ml_init(&dict->keys, keysize, itemcap, comparer);
+    ml_init(&dict->values, valuesize, itemcap, NULL); // Values don’t need a comparer
 }
 
-void md_setcap(m_Dict* dict, I32 newcap, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    ml_setcap(&dict->keys, newcap, errptr);
-    ml_setcap(&dict->values, newcap, errptr);
+void md_setcap(m_Dict* dict, I32 newcap) {
+    ml_setcap(&dict->keys, newcap);
+    ml_setcap(&dict->values, newcap);
 }
 
-void* md_get(m_Dict* dict, void* key, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+void* md_get(m_Dict* dict, void* key) {
+    I32 index = ml_find(&dict->keys, key);
+    return (index >= 0) ? ml_get(&dict->values, index) : NULL;
+}
 
-    I32 index = ml_find(&dict->keys, key, errptr);
+IErr md_put(m_Dict* dict, void* key, void* value) {
+    I32 index = ml_find(&dict->keys, key);
     if (index >= 0) {
-        return ml_get(&dict->values, index, errptr);
+        return ml_put(&dict->values, index, value);
     }
-    return NULL;
+    IErr err = ml_push(&dict->keys, key);
+    if (err != 0) return err;
+    err = ml_push(&dict->values, value);
+    if (err != 0) {
+        ml_remove(&dict->keys, ml_count(&dict->keys) - 1);
+        return err;
+    }
+    return 0; // Success
 }
 
-void md_put(m_Dict* dict, void* key, void* value, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
+Bool md_has(m_Dict* dict, void* key) {
+    return ml_find(&dict->keys, key) >= 0;
+}
 
-    I32 index = ml_find(&dict->keys, key, errptr);
+IErr md_remove(m_Dict* dict, void* key) {
+    I32 index = ml_find(&dict->keys, key);
     if (index >= 0) {
-        memcpy(ml_get(&dict->values, index, errptr), value, dict->values.buffer.itemsize);
-    } else {
-        ml_push(&dict->keys, key, errptr);
-        ml_push(&dict->values, value, errptr);
+        IErr err = ml_remove_swap(&dict->keys, index);
+        if (err != 0) return err;
+        return ml_remove_swap(&dict->values, index);
     }
+    return 0; // No key found, still success
 }
 
-Bool md_has(m_Dict* dict, void* key, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    return ml_find(&dict->keys, key, errptr) >= 0;
-}
-
-void md_remove(m_Dict* dict, void* key, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    I32 index = ml_find(&dict->keys, key, errptr);
+IErr md_remove_ordered(m_Dict* dict, void* key) {
+    I32 index = ml_find(&dict->keys, key);
     if (index >= 0) {
-        ml_remove_swap(&dict->keys, index, errptr);
-        ml_remove_swap(&dict->values, index, errptr);
+        IErr err = ml_remove(&dict->keys, index);
+        if (err != 0) return err;
+        return ml_remove(&dict->values, index);
     }
+    return 0; // No key found, still success
 }
 
-void md_remove_ordered(m_Dict* dict, void* key, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    I32 index = ml_find(&dict->keys, key, errptr);
-    if (index >= 0) {
-        ml_remove(&dict->keys, index, errptr);
-        ml_remove(&dict->values, index, errptr);
-    }
+void md_clear(m_Dict* dict) {
+    ml_clear(&dict->keys);
+    ml_clear(&dict->values);
 }
 
-void md_clear(m_Dict* dict, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    ml_clear(&dict->keys, errptr);
-    ml_clear(&dict->values, errptr);
-}
-
-I32 md_count(m_Dict* dict, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+I32 md_count(m_Dict* dict) {
     return dict->keys.count;
 }
 
-m_StrBuffer* ms_create(I32 itemcap, m_Allocator* allocator, IErr* errptr) {
+// String buffer functions
+m_StrBuffer* ms_create(I32 itemcap) {
     m_StrBuffer* strbuffer = (m_StrBuffer*)m_alloc(sizeof(m_StrBuffer));
     if (!strbuffer) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return nil;
     }
-    ms_init(strbuffer, itemcap, allocator, errptr);
-    if (errptr && *errptr != 0) {
-        m_free(strbuffer);
-        return nil;
-    }
+    ms_init(strbuffer, itemcap);
     return strbuffer;
 }
 
-void ms_destroy(m_StrBuffer* strbuffer, IErr* errptr) {
+void ms_destroy(m_StrBuffer* strbuffer) {
     if (!strbuffer) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER;
         return;
     }
-    ms_clear(strbuffer, errptr);
-    mb_setcap(&strbuffer->buffer, 0, errptr);
+    ms_clear(strbuffer);
+    mb_setcap(&strbuffer->buffer, 0);
     m_free(strbuffer);
 }
 
-void ms_init(m_StrBuffer* strbuffer, I32 itemcap, m_Allocator* allocator, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    mb_init(&strbuffer->buffer, sizeof(char), itemcap + 1, allocator, errptr); // +1 for the null terminator
-    if (errptr && *errptr != 0) return; // Return if error occurred
-
+void ms_init(m_StrBuffer* strbuffer, I32 itemcap) {
+    mb_init(&strbuffer->buffer, sizeof(char), itemcap + 1); // +1 for null terminator
     strbuffer->length = 0;
-    strbuffer->buffer.data[0] = '\0'; // Ensure the buffer is null-terminated
+    strbuffer->buffer.data[0] = '\0';
 }
 
-void ms_setcap(m_StrBuffer* strbuffer, I32 newcap, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    mb_setcap(&strbuffer->buffer, newcap + 1, errptr); // +1 for the null terminator
-    if (errptr && *errptr != 0) return; // Return if error occurred
-
+void ms_setcap(m_StrBuffer* strbuffer, I32 newcap) {
+    mb_setcap(&strbuffer->buffer, newcap + 1); // +1 for null terminator
     if (strbuffer->length > newcap) {
         strbuffer->length = newcap;
     }
-    strbuffer->buffer.data[strbuffer->length] = '\0'; // Ensure the buffer is null-terminated
+    strbuffer->buffer.data[strbuffer->length] = '\0';
 }
 
-void ms_clear(m_StrBuffer* strbuffer, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+void ms_clear(m_StrBuffer* strbuffer) {
     strbuffer->length = 0;
-    strbuffer->buffer.data[0] = '\0'; // Ensure the buffer is null-terminated
+    strbuffer->buffer.data[0] = '\0';
 }
 
-char* ms_getstr(m_StrBuffer* strbuffer, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+char* ms_getstr(m_StrBuffer* strbuffer) {
     return (char*)strbuffer->buffer.data;
 }
 
 void ms_cat(m_StrBuffer* strbuffer, const char* format, ...) {
-    IErr e = 0;
     va_list args;
     va_start(args, format);
 
-    // Calculate the length of the new string
     va_list args_copy;
     va_copy(args_copy, args);
     I32 length = vsnprintf(NULL, 0, format, args_copy);
     va_end(args_copy);
 
-    // Ensure there's enough space in the buffer
     I32 newlength = strbuffer->length + length;
     if (newlength >= strbuffer->buffer.itemcap - 1) {
-        ms_setcap(strbuffer, newlength + 1, &e);
+        ms_setcap(strbuffer, newlength + 1);
     }
 
-    // Append the new string
     vsprintf((char*)strbuffer->buffer.data + strbuffer->length, format, args);
     strbuffer->length = newlength;
-    strbuffer->buffer.data[strbuffer->length] = '\0'; // Ensure the buffer is null-terminated
+    strbuffer->buffer.data[strbuffer->length] = '\0';
 
     va_end(args);
 }
 
+void ms_trim(m_StrBuffer* strbuffer) {
+    if (strbuffer->length == 0) return;
 
-void ms_trim(m_StrBuffer* strbuffer, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
-    if (strbuffer->length == 0) return; // Nothing to trim
-
-    // Trim leading whitespace
     U8* start = strbuffer->buffer.data;
     while (isspace(*start)) start++;
 
-    // Trim trailing whitespace
     U8* end = strbuffer->buffer.data + strbuffer->length - 1;
     while (end > start && isspace(*end)) end--;
 
-    // Calculate new length
     strbuffer->length = end - start + 1;
     memmove(strbuffer->buffer.data, start, strbuffer->length);
-    strbuffer->buffer.data[strbuffer->length] = '\0'; // Ensure null-termination
+    strbuffer->buffer.data[strbuffer->length] = '\0';
 }
 
-void ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+IErr ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest) {
     if (start < 0 || start >= strbuffer->length || length <= 0) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Invalid start or length
-        return;
+        return M_ERR_OUT_OF_BOUNDS;
     }
 
-    I32 actual_length = length;
-    if (start + length > strbuffer->length) {
-        actual_length = strbuffer->length - start;
-    }
+    I32 actual_length = (start + length > strbuffer->length) ? strbuffer->length - start : length;
 
-    ms_init(dest, actual_length, strbuffer->buffer.allocator, errptr);
-    if (errptr && *errptr != 0) return; // Return if error occurred
-
+    ms_init(dest, actual_length);
     strncpy((char*)dest->buffer.data, (char*)strbuffer->buffer.data + start, actual_length);
     dest->length = actual_length;
-    dest->buffer.data[dest->length] = '\0'; // Ensure null-termination
+    dest->buffer.data[dest->length] = '\0';
+    return 0; // Success
 }
 
-I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr) {
-    if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
+I32 ms_find(m_StrBuffer* strbuffer, const char* substring) {
     if (strbuffer->length == 0 || !substring || *substring == '\0') {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Invalid input
         return -1;
     }
 
     char* found = strstr((char*)strbuffer->buffer.data, substring);
-    if (found) {
-        return found - (char*)strbuffer->buffer.data;
-    } else {
-        return -1;
-    }
+    return found ? (found - (char*)strbuffer->buffer.data) : -1;
 }
 
+// Logging functions
 static m_LogLevel current_log_level = M_LOG_INFO;
 
 void m_set_loglevel(m_LogLevel level) {
@@ -950,21 +796,11 @@ void m_log_raw(m_LogLevel level, const char* format, ...) {
     va_start(args, format);
 
     switch (level) {
-        case M_LOG_TRACE:
-            fprintf(stdout, "[TRACE] ");
-            break;
-        case M_LOG_INFO:
-            fprintf(stdout, "[INFO] ");
-            break;
-        case M_LOG_WARN:
-            fprintf(stdout, "[WARN] ");
-            break;
-        case M_LOG_ERROR:
-            fprintf(stdout, "[ERROR] ");
-            break;
-        case M_LOG_FATAL:
-            fprintf(stdout, "[FATAL] ");
-            break;
+        case M_LOG_TRACE: fprintf(stdout, "[TRACE] "); break;
+        case M_LOG_INFO:  fprintf(stdout, "[INFO] ");  break;
+        case M_LOG_WARN:  fprintf(stdout, "[WARN] ");  break;
+        case M_LOG_ERROR: fprintf(stdout, "[ERROR] "); break;
+        case M_LOG_FATAL: fprintf(stdout, "[FATAL] "); break;
     }
 
     vfprintf(stdout, format, args);
