@@ -11,6 +11,7 @@ build:
 
 amalgamate:
 	./amalgamate.sh
+	./amalgamate_2files.sh
 
 run: amalgamate config build
 	_b/unit_tests

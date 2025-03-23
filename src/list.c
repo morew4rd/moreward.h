@@ -91,8 +91,8 @@ I32 ml_count(m_List* list, IErr* errptr) {
 
 void* ml_get(m_List* list, I32 index, IErr* errptr) {
     if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
-
     if (index >= list->count) {
+
         if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
         return NULL;
     }
@@ -103,7 +103,7 @@ void ml_put(m_List* list, I32 index, void* item, IErr* errptr) {
     if (errptr) *errptr = 0; // Initialize error code to 0 (no error)
 
     if (index >= list->count) {
-        if (errptr) *errptr = M_ERR_NULL_POINTER; // Error: index out of bounds
+        if (errptr) *errptr = M_ERR_OUT_OF_BOUNDS; // Error: index out of bounds
         return;
     }
 

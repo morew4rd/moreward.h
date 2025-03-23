@@ -2,7 +2,7 @@
 
 `moreward.h` is a header file designed to provide a set of common data structures and utility functions for C programming. It includes definitions for various types, memory allocation macros, and structures for lists, dictionaries, and string buffers. The file also provides logging capabilities and custom allocator support.
 
-## Build
+## Setup
 
 From only one `.c` file set `MOREWARD_IMPL` before including the library:
 
@@ -16,6 +16,8 @@ From other `.c` files, you can include it normally:
 ```c
 #include "moreward.h"
 ```
+
+Alternatively, you can use "mg.h" and "mg.c" files. Include the c file in your build. Rest of the document applies either way you set the library up.
 
 ## Types
 

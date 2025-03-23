@@ -1,6 +1,11 @@
-#ifndef  _M_H_
-#define  _M_H_
-/* this is dev/test time header. in the final "amalgamated" version (moreward.h), this is on the top of the file. */
+#ifndef _MG_H
+#define _MG_H
+
+/*
+
+simple C99 library. 2 file version
+*/
+
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -172,4 +177,4 @@ void ms_trim(m_StrBuffer* strbuffer, IErr* errptr);
 void ms_substr(m_StrBuffer* strbuffer, I32 start, I32 length, m_StrBuffer* dest, IErr* errptr);
 I32 ms_find(m_StrBuffer* strbuffer, const char* substring, IErr* errptr);
 
-#endif  // _M_H_
+#endif /* _MG_H */
