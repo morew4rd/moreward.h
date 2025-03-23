@@ -2,6 +2,8 @@
 
 #ifdef UNIT_TESTS
 #include "m.h"
+#elif E2E_TESTS_TWO_FILES
+#include "mg.h"
 #else
 #define MOREWARD_IMPL
 #include "moreward.h"

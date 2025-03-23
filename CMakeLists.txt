@@ -30,7 +30,16 @@ target_sources(unit_tests PRIVATE
     ${test_src}
 )
 
+add_executable(e2e_tests_two_files)
+target_compile_definitions(e2e_tests_two_files PRIVATE E2E_TESTS_TWO_FILES)
+target_include_directories(e2e_tests_two_files PRIVATE ${CMAKE_SOURCE_DIR})
+target_sources(e2e_tests_two_files PRIVATE
+    mg.c
+    ${test_src}
+)
+
 add_executable(e2e_tests)
+target_compile_definitions(unit_tests PRIVATE E2E_TESTS)
 target_include_directories(e2e_tests PRIVATE ${CMAKE_SOURCE_DIR})
 target_sources(e2e_tests PRIVATE
     ${test_src}

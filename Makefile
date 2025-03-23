@@ -14,6 +14,7 @@ amalgamate:
 	./amalgamate_2files.sh
 
 run: amalgamate config build
-	_b/unit_tests
-	_b/e2e_tests
 	_b/sample hi hello whats up
+	_b/unit_tests
+	_b/e2e_tests_two_files
+	_b/e2e_tests
