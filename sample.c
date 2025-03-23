@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 // Example: String Buffer Usage
-void str_buffer_example(void) {
+Void str_buffer_example(Void) {
     m_log_info("--- StrBuffer Example ---");
 
     // Create a StrBuffer with capacity 100 using the global allocator
@@ -29,7 +29,7 @@ void str_buffer_example(void) {
 }
 
 // Example: List Usage
-void list_example(void) {
+Void list_example(Void) {
     m_log_info("--- List Example ---");
 
     // Create a List of integers with capacity 10
@@ -65,7 +65,7 @@ void list_example(void) {
 }
 
 // Example: Dictionary Usage
-void dict_example(void) {
+Void dict_example(Void) {
     m_log_info("--- Dict Example ---");
 
     // Create a Dict with integer keys and string values, capacity 10
@@ -102,7 +102,7 @@ void dict_example(void) {
 }
 
 // Example: Logging Levels
-void logging_example(void) {
+Void logging_example(Void) {
     m_log_info("--- Logging Example ---");
 
     // Set log level to INFO
@@ -125,40 +125,40 @@ typedef struct {
 } StackAllocator;
 
 // Custom malloc function for the stack allocator
-static void* stack_malloc(size_t size, void* userdata) {
+static Void* stack_malloc(Sz size, Void* userdata) {
     StackAllocator* stack = (StackAllocator*)userdata;
     if (stack->stack_top + size > stack->stack_end) {
         return NULL; // Out of memory
     }
-    void* ptr = stack->stack_top;
+    Void* ptr = stack->stack_top;
     stack->stack_top += size;
     return ptr;
 }
 
 // Custom realloc function for the stack allocator (not supported)
-static void* stack_realloc(void* ptr, size_t new_size, void* userdata) {
+static Void* stack_realloc(Void* ptr, Sz new_size, Void* userdata) {
     return NULL; // Realloc not supported
 }
 
 // Custom free function for the stack allocator (not supported)
-static void stack_free(void* ptr, void* userdata) {
+static Void stack_free(Void* ptr, Void* userdata) {
     // Free not supported
 }
 
 // Initialize the stack allocator
-void init_stack_allocator(StackAllocator* stack, U8* buffer, size_t size) {
+Void init_stack_allocator(StackAllocator* stack, U8* buffer, Sz size) {
     stack->stack_base = buffer;
     stack->stack_top = buffer;
     stack->stack_end = buffer + size;
 }
 
 // Reset the stack allocator
-void reset_stack_allocator(StackAllocator* stack) {
+Void reset_stack_allocator(StackAllocator* stack) {
     stack->stack_top = stack->stack_base;
 }
 
 // Example: Custom Allocator Usage
-void custom_allocator_example(void) {
+Void custom_allocator_example(Void) {
     m_log_info("--- Custom Allocator Example ---");
 
     // Create a stack allocator with a buffer of 101 bytes

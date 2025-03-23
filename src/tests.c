@@ -19,7 +19,7 @@ UTEST(Scratch, Logging) {
 
 
 // Utility function to compare integers for list and dictionary operations
-static I32 int_comparer(void* item1, void* item2) {
+static I32 int_comparer(Void* item1, Void* item2) {
     I32 a = *(I32*)item1;
     I32 b = *(I32*)item2;
     return (a > b) - (a < b);
