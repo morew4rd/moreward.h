@@ -2,7 +2,10 @@
 
 ## Overview
 
-moreward.h is a lightweight, single-header C library designed to provide essential data structures and utility functions. It includes dynamic arrays (lists), key-value stores (dictionaries), string buffers, and a flexible logging system. The library supports custom memory allocators for precise control over memory management, making it suitable for performance-critical applications or resource-constrained environments.
+moreward.h is a lightweight, single-header C library designed to provide essential data structures and utility functions.
+It includes dynamic arrays (lists), key-value stores (dictionaries), string buffers, and a flexible logging system.
+The library supports custom memory allocators for precise control over memory management, making it suitable for
+performance-critical applications or resource-constrained environments.
 
 ## Setup
 
@@ -19,7 +22,8 @@ In all other C files, include the header normally without the definition:
 #include "moreward.h"
 ```
 
-**Note:** Alternatively, you can use the mg.h (header) and mg.c (implementation) files from src directly. Include mg.c in your build process, and the rest of this documentation still applies.
+Note: Alternatively, you can use the mg.h (header) and mg.c (implementation) files from src directly.
+Include mg.c in your build process, and the rest of this documentation still applies.
 
 ## Types
 
@@ -49,11 +53,18 @@ In all other C files, include the header normally without the definition:
 
 ## Memory Management
 
-The library uses a global allocator for all memory operations, which can be customized for specific needs (e.g., memory pools or tracking).
+The library uses a global allocator for all memory operations, which can be customized for specific needs
+(e.g., memory pools or tracking).
 
 - `m_set_allocator(m_Allocator* allocator)`: Sets a custom allocator.
 - `m_reset_allocator()`: Reverts to the default allocator (standard malloc/realloc/free).
 - `m_get_allocator()`: Retrieves the current allocator.
+
+Helper macros that use the currently set allocator.
+
+- `m_alloc(n)`: Allocates n bytes using the current allocator.
+- `m_realloc(p, n)`: Reallocates memory to n bytes.
+- `m_free(p)`: Frees allocated memory.
 
 ### Custom Allocator Example
 
@@ -74,7 +85,8 @@ m_set_allocator(&custom);
 
 ## Error Handling
 
-Functions that may fail return an code directly (0 indicates success, non-zero indicates an error). Check the return value to handle errors:
+Functions that may fail return an code directly (0 indicates success, non-zero indicates an error).
+Check the return value to handle errors:
 
 ```c
 err = ml_push(&list, &item);
@@ -92,6 +104,9 @@ A low-level dynamic buffer for raw data.
 - `mb_destroy(m_Buffer* buffer)`: Frees the buffer’s memory.
 - `mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap)`: Initializes an existing buffer.
 - `mb_setcap(m_Buffer* buffer, I32 newcap)`: Resizes the buffer’s capacity.
+
+### Custom comparer
+- `I32 (*m_ItemComparer)(Void* item1, Void* item2)`: For list/dict key find/sort functions.
 
 ### List (m_List)
 A dynamic array with flexible operations.
@@ -162,9 +177,7 @@ The logging system provides configurable severity levels for debugging and monit
 
 ## Other macros
 
-- `m_alloc(n)`: Allocates n bytes using the current allocator.
-- `m_realloc(p, n)`: Reallocates memory to n bytes.
-- `m_free(p)`: Frees allocated memory.
+
 - `m_countof(a)`: Returns the number of elements in a static array.
 - `m_max(a, b)`: Returns the maximum of two values.
 - `m_min(a, b)`: Returns the minimum of two values.

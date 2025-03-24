@@ -179,7 +179,7 @@ Void custom_allocator_example(Void) {
     m_log_info("Custom allocator set");
 
     // Create a StrBuffer using the custom allocator
-    m_StrBuffer* sb = ms_create(50); // Anything larger would exceed stack size
+    m_StrBuffer* sb = ms_create(50); // string currently uses a bit too much extra at the end
     if (!sb) {
         m_log_error("Failed to create StrBuffer with custom allocator");
         return;

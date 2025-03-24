@@ -9,7 +9,10 @@ License (MIT) is at the EOF .
 
 ## Overview
 
-moreward.h is a lightweight, single-header C library designed to provide essential data structures and utility functions. It includes dynamic arrays (lists), key-value stores (dictionaries), string buffers, and a flexible logging system. The library supports custom memory allocators for precise control over memory management, making it suitable for performance-critical applications or resource-constrained environments.
+moreward.h is a lightweight, single-header C library designed to provide essential data structures and utility functions.
+It includes dynamic arrays (lists), key-value stores (dictionaries), string buffers, and a flexible logging system.
+The library supports custom memory allocators for precise control over memory management, making it suitable for
+performance-critical applications or resource-constrained environments.
 
 ## Setup
 
@@ -26,7 +29,8 @@ In all other C files, include the header normally without the definition:
 #include "moreward.h"
 ```
 
-**Note:** Alternatively, you can use the mg.h (header) and mg.c (implementation) files from src directly. Include mg.c in your build process, and the rest of this documentation still applies.
+Note: Alternatively, you can use the mg.h (header) and mg.c (implementation) files from src directly.
+Include mg.c in your build process, and the rest of this documentation still applies.
 
 ## Types
 
@@ -35,7 +39,7 @@ In all other C files, include the header normally without the definition:
 - Unsigned Integers: `U8, U16, U32, U64` (8, 16, 32, 64 bits)
 - Floating-Point: `F32, F64` (32, 64 bits)
 - Boolean: `Bool` (true/false)
-- Strings: `Str` (mutable Str), `CStr` (immutable CStr)
+- Strings: `Str` (mutable char*), `CStr` (immutable const char*)
 - Sizes: `Sz` (unsigned Sz), `ISz` (signed ptrdiff_t)
 - Error Code: `IErr` (int32_t, 0 for success, non-zero for errors)
 
@@ -56,11 +60,18 @@ In all other C files, include the header normally without the definition:
 
 ## Memory Management
 
-The library uses a global allocator for all memory operations, which can be customized for specific needs (e.g., memory pools or tracking).
+The library uses a global allocator for all memory operations, which can be customized for specific needs
+(e.g., memory pools or tracking).
 
 - `m_set_allocator(m_Allocator* allocator)`: Sets a custom allocator.
 - `m_reset_allocator()`: Reverts to the default allocator (standard malloc/realloc/free).
 - `m_get_allocator()`: Retrieves the current allocator.
+
+Helper macros that use the currently set allocator.
+
+- `m_alloc(n)`: Allocates n bytes using the current allocator.
+- `m_realloc(p, n)`: Reallocates memory to n bytes.
+- `m_free(p)`: Frees allocated memory.
 
 ### Custom Allocator Example
 
@@ -81,7 +92,8 @@ m_set_allocator(&custom);
 
 ## Error Handling
 
-Functions that may fail return an code directly (0 indicates success, non-zero indicates an error). Check the return value to handle errors:
+Functions that may fail return an code directly (0 indicates success, non-zero indicates an error).
+Check the return value to handle errors:
 
 ```c
 err = ml_push(&list, &item);
@@ -99,6 +111,9 @@ A low-level dynamic buffer for raw data.
 - `mb_destroy(m_Buffer* buffer)`: Frees the buffer’s memory.
 - `mb_init(m_Buffer* buffer, I32 itemsize, I32 itemcap)`: Initializes an existing buffer.
 - `mb_setcap(m_Buffer* buffer, I32 newcap)`: Resizes the buffer’s capacity.
+
+### Custom comparer
+- `I32 (*m_ItemComparer)(Void* item1, Void* item2)`: For list/dict key find/sort functions.
 
 ### List (m_List)
 A dynamic array with flexible operations.
@@ -169,14 +184,230 @@ The logging system provides configurable severity levels for debugging and monit
 
 ## Other macros
 
-- `m_alloc(n)`: Allocates n bytes using the current allocator.
-- `m_realloc(p, n)`: Reallocates memory to n bytes.
-- `m_free(p)`: Frees allocated memory.
+
 - `m_countof(a)`: Returns the number of elements in a static array.
 - `m_max(a, b)`: Returns the maximum of two values.
 - `m_min(a, b)`: Returns the minimum of two values.
 
 
+*/
+
+/* // Sample code 
+
+#define MOREWARD_IMPL
+#include "moreward.h"
+#include <stdio.h>
+
+// Example: String Buffer Usage
+Void str_buffer_example(Void) {
+    m_log_info("--- StrBuffer Example ---");
+
+    // Create a StrBuffer with capacity 100 using the global allocator
+    m_StrBuffer* sb = ms_create(100);
+    if (!sb) {
+        m_log_error("Failed to create StrBuffer");
+        return;
+    }
+    m_log_info("StrBuffer created with capacity 100");
+
+    // Concatenate strings
+    ms_cat(sb, "Hello, ");
+    ms_cat(sb, "world!");
+    m_log_info("Concatenated strings: %s", ms_getstr(sb));
+
+    // Clear the StrBuffer
+    ms_setcap(sb, 0);
+    m_log_info("StrBuffer cleared");
+
+    // Destroy the StrBuffer
+    ms_destroy(sb);
+    m_log_info("StrBuffer destroyed");
+}
+
+// Example: List Usage
+Void list_example(Void) {
+    m_log_info("--- List Example ---");
+
+    // Create a List of integers with capacity 10
+    m_List* list = ml_create(sizeof(I32), 10, NULL);
+    if (!list) {
+        m_log_error("Failed to create List");
+        return;
+    }
+    m_log_info("List created with capacity 10");
+
+    // Push items into the list
+    I32 items[] = {1, 2, 3, 4, 5};
+    for (I32 i = 0; i < m_countof(items); ++i) {
+        if (ml_push(list, &items[i]) != 0) {
+            m_log_error("Failed to push item %d", items[i]);
+        }
+    }
+    m_log_info("Pushed items into the list");
+
+    // Get and print items from the list
+    for (I32 i = 0; i < ml_count(list); ++i) {
+        I32* item = (I32*)ml_get(list, i);
+        if (item) {
+            m_log_info("List item at index %d: %d", i, *item);
+        } else {
+            m_log_warn("Item at index %d not found", i);
+        }
+    }
+
+    // Destroy the list
+    ml_destroy(list);
+    m_log_info("List destroyed");
+}
+
+// Example: Dictionary Usage
+Void dict_example(Void) {
+    m_log_info("--- Dict Example ---");
+
+    // Create a Dict with integer keys and string values, capacity 10
+    m_Dict* dict = md_create(sizeof(I32), sizeof(Str), 10, NULL);
+    if (!dict) {
+        m_log_error("Failed to create Dict");
+        return;
+    }
+    m_log_info("Dict created with capacity 10");
+
+    // Put key-value pairs into the dict
+    I32 keys[] = {1, 2, 3};
+    Str values[] = {"one", "two", "three"};
+    for (I32 i = 0; i < m_countof(keys); ++i) {
+        if (md_put(dict, &keys[i], &values[i]) != 0) {
+            m_log_error("Failed to put key %d", keys[i]);
+        }
+    }
+    m_log_info("Put key-value pairs into the dict");
+
+    // Get and print values from the dict
+    for (I32 i = 0; i < m_countof(keys); ++i) {
+        Str* value = (Str*)md_get(dict, &keys[i]);
+        if (value) {
+            m_log_info("Dict value for key %d: %s", keys[i], *value);
+        } else {
+            m_log_warn("Key %d not found", keys[i]);
+        }
+    }
+
+    // Destroy the dict
+    md_destroy(dict);
+    m_log_info("Dict destroyed");
+}
+
+// Example: Logging Levels
+Void logging_example(Void) {
+    m_log_info("--- Logging Example ---");
+
+    // Set log level to INFO
+    m_set_loglevel(M_LOG_INFO);
+    m_log_info("Log level set to INFO");
+
+    // Log messages at different levels
+    m_log_trace("This is a trace message"); // Won't be printed
+    m_log_info("This is an info message");
+    m_log_warn("This is a warning message");
+    m_log_error("This is an error message");
+    m_log_fatal("This is a fatal message");
+}
+
+// Custom allocator structure for a simple stack allocator
+typedef struct {
+    U8* stack_base;
+    U8* stack_top;
+    U8* stack_end;
+} StackAllocator;
+
+// Custom malloc function for the stack allocator
+static Void* stack_malloc(Sz size, Void* userdata) {
+    StackAllocator* stack = (StackAllocator*)userdata;
+    if (stack->stack_top + size > stack->stack_end) {
+        return NULL; // Out of memory
+    }
+    Void* ptr = stack->stack_top;
+    stack->stack_top += size;
+    return ptr;
+}
+
+// Custom realloc function for the stack allocator (not supported)
+static Void* stack_realloc(Void* ptr, Sz new_size, Void* userdata) {
+    return NULL; // Realloc not supported
+}
+
+// Custom free function for the stack allocator (not supported)
+static Void stack_free(Void* ptr, Void* userdata) {
+    // Free not supported
+}
+
+// Initialize the stack allocator
+Void init_stack_allocator(StackAllocator* stack, U8* buffer, Sz size) {
+    stack->stack_base = buffer;
+    stack->stack_top = buffer;
+    stack->stack_end = buffer + size;
+}
+
+// Reset the stack allocator
+Void reset_stack_allocator(StackAllocator* stack) {
+    stack->stack_top = stack->stack_base;
+}
+
+// Example: Custom Allocator Usage
+Void custom_allocator_example(Void) {
+    m_log_info("--- Custom Allocator Example ---");
+
+    // Create a stack allocator with a buffer of 101 bytes
+    U8 buffer[101];
+    StackAllocator stack = {0};
+    init_stack_allocator(&stack, buffer, sizeof(buffer));
+
+    // Create a custom allocator using the stack allocator
+    m_Allocator custom_allocator = {
+        .malloc = stack_malloc,
+        .realloc = stack_realloc,
+        .free = stack_free,
+        .userdata = &stack
+    };
+
+    // Set the custom allocator
+    m_set_allocator(&custom_allocator);
+    m_log_info("Custom allocator set");
+
+    // Create a StrBuffer using the custom allocator
+    m_StrBuffer* sb = ms_create(50); // string currently uses a bit too much extra at the end
+    if (!sb) {
+        m_log_error("Failed to create StrBuffer with custom allocator");
+        return;
+    }
+    m_log_info("StrBuffer created using custom allocator");
+
+    // Concatenate strings
+    ms_cat(sb, "Hello, ");
+    ms_cat(sb, "world!");
+    m_log_info("Concatenated strings: %s", ms_getstr(sb));
+
+    // Reset the stack allocator
+    reset_stack_allocator(&stack);
+    m_log_info("Stack allocator reset");
+
+    // Destroy the StrBuffer
+    ms_destroy(sb);
+    m_log_info("StrBuffer destroyed");
+
+    // Reset to the default allocator
+    m_reset_allocator();
+    m_log_info("Allocator reset to default");
+}
+
+I32 main(I32 argc, Str* argv) {
+    str_buffer_example();
+    list_example();
+    dict_example();
+    logging_example();
+    custom_allocator_example();
+    return 0;
+}
 */
 
 #include <stdbool.h>
@@ -204,7 +435,7 @@ typedef uint32_t    U32;
 typedef uint64_t    U64;
 typedef float       F32;
 typedef double      F64;
-typedef Str       Str;
+typedef char       *Str;
 typedef const char *CStr;
 typedef size_t      Sz;
 typedef ptrdiff_t   ISz;
