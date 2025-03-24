@@ -4,7 +4,7 @@
 #include "mg.h"
 #else
 #define MOREWARD_IMPL
-#include "moreward.h"
+#include "../moreward.h"
 #endif
 
 
